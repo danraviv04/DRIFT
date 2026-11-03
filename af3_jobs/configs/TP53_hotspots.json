@@ -1,0 +1,23 @@
+{
+  "name": "TP53_hotspots",
+  "description": "TP53 cancer hotspot alleles absent from the 1,174-variant TP53 batch ($DRIFT_ARCHIVE_ROOT/TP53), added 2026-10-14. Same construct as that batch, read from its job JSONs: the full-length p53 homotetramer (P04637, 393 aa, chains A-D, every copy mutated), a 21-bp DNA duplex (E/F) and four Zn2+ (G-J), dialect version 4, 25 seeds. Job names keep the batch's form P53_<variant>_with_ZN_and_DNA. G245S, G245D and H179R are already in the batch. These are a hotspot-only stratum: chosen for their cancer frequency, so statistics on the position-sampled batch must exclude them (as KRAS4B's hotspot_only).",
+  "job_prefix": "P53",
+  "job_suffix": "_with_ZN_and_DNA",
+  "model_seeds": 25,
+  "dialect": "alphafold3",
+  "version": 4,
+  "chains": [
+    {"id": ["A", "B", "C", "D"], "type": "protein", "gene": "TP53", "uniprot": "P04637", "mutate": true,
+     "note": "Homotetramer: one AF3 entity with four ids, so the substitution is in all four copies, as in the existing batch."},
+    {"id": "E", "type": "dna", "sequence": "TCACAAGTTAGAGACAAGCCT"},
+    {"id": "F", "type": "dna", "sequence": "AGGCTTGTCTCTAACTTGTGA"},
+    {"id": ["G", "H", "I", "J"], "type": "ligand", "ccd_codes": ["ZN"]}
+  ],
+  "mutations": {
+    "source": "list",
+    "include": ["R175H", "R248Q", "R248W", "R273H", "R273C", "R282W", "Y220C", "R249S",
+                "V157F", "R158H", "Y163C", "C176F", "M237I", "R280K", "E285K"]
+  },
+  "include_wt": false,
+  "output": {"dir": "muts_jsons", "tag": ""}
+}

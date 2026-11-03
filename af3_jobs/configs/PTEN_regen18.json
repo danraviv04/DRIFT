@@ -1,0 +1,55 @@
+{
+  "name": "PTEN",
+  "description": "PTEN monomer + PO4, same construct as the 250-variant batch and _regen14. Re-run batch (2026-09-24): the 13 cohort variants with no verified raw archive on $DRIFT_ARCHIVE_ROOT/PTEN (12 lost in the 2026-08-19 overwrite + R130L, whose archive held S170R), plus the 5 ClinVar start-codon variants M1I/L/R/T/V (existing archives valid; regenerated at the user's request). Cohort-derived list = canonical cohort minus archives passing experiments/pten_drive_clinvar_validation.",
+  "model_seeds": 25,
+  "dialect": "alphafold3",
+  "version": 4,
+  "chains": [
+    {
+      "id": "A",
+      "type": "protein",
+      "gene": "PTEN",
+      "sequence": "MTAIIKEIVSRNKRRYQEDGFDLDLTYIYPNIIAMGFPAERLEGVYRNNIDDVVRFLDSKHKNHYKIYNLCAERHYDTAKFNCRVAQYPFEDHNPPQLELIKPFCEDLDQWLSEDDNHVAAIHCKAGKGRTGVMICAYLLHRGKFLKAQEALDFYGEVRTRDKKGVTIPSQRRYVYYYSYLLKNHLDYRPVALLFHKMMFETIPMFSGGTCNPQFVVCQLKVKIYSSNSGPTRREDKFMYFEFPQPLPVCGDIKVEFFHKQNKMLKKDKMFHFWVNTFFIPGPEETSEKVENGSLCDQEIDSICSIERADNDKEYLVLTLTKNDLDKANKDKANRYFSPNFKVKLYFTKTVEEPSNPEASSSTSVTPDVSDNEPDHYRYSDTTDSDPENEPFDEDQHTQITKV",
+      "mutate": true,
+      "note": "UniProt P60484 / ENST00000371953.8, 403 aa. Kept as a literal sequence so the batch is byte-reproducible without a UniProt round trip."
+    },
+    {
+      "id": "B",
+      "type": "ligand",
+      "ccd_codes": [
+        "PO4"
+      ],
+      "note": "Reproduced from the job spec of an existing correct run (PTEN_A121E_data.json)."
+    }
+  ],
+  "mutations": {
+    "source": "list",
+    "gene": "PTEN",
+    "include": [
+      "M1I",
+      "M1L",
+      "M1R",
+      "M1T",
+      "M1V",
+      "R15S",
+      "P96S",
+      "R130G",
+      "R130L",
+      "R130P",
+      "R130Q",
+      "R159G",
+      "R159K",
+      "R159W",
+      "Q171K",
+      "R173C",
+      "R173G",
+      "R173H"
+    ],
+    "exclude": []
+  },
+  "include_wt": false,
+  "output": {
+    "dir": "muts_jsons",
+    "tag": "_regen18"
+  }
+}

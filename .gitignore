@@ -1,0 +1,28 @@
+__pycache__/
+*.pyc
+.DS_Store
+# run_all.sh logs
+logs/
+.mpl/
+.xdg_cache/
+# data (deposited separately) and everything run_all.sh writes
+PLDDTs/
+Ground_Truths/
+drift/cache/
+drift/results/
+metric_analysis/structure_metrics/
+metric_analysis/manifests/*.csv
+experiments/**/results*/
+experiments/annotation_stages/publication/
+experiments/annotation_stages/side/
+figures/*.pdf
+figures/panels/
+experiments/**/inputs/
+experiments/figure1_layout/panels/
+experiments/msh6_case_study/wt_75seeds/
+experiments/pten_wt_null_panel/plddt/
+experiments/pten_wt_null_panel/results_*/
+experiments/seed_structure/plateau_20261018/
+experiments/seed_structure/three_arm_n25/
+experiments/fig1b_corefit_models/models/
+experiments/fig1b_corefit_models/panel_b/

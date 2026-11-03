@@ -1,0 +1,51 @@
+{
+  "name": "PTEN",
+  "description": "PTEN monomer with a phosphate ion, as used for the 250-variant batch on $DRIFT_ARCHIVE_ROOT/PTEN. This config as written reproduces the _regen14 re-run of the 14 mislabeled archives.",
+  "model_seeds": 25,
+  "dialect": "alphafold3",
+  "version": 4,
+  "chains": [
+    {
+      "id": "A",
+      "type": "protein",
+      "gene": "PTEN",
+      "sequence": "MTAIIKEIVSRNKRRYQEDGFDLDLTYIYPNIIAMGFPAERLEGVYRNNIDDVVRFLDSKHKNHYKIYNLCAERHYDTAKFNCRVAQYPFEDHNPPQLELIKPFCEDLDQWLSEDDNHVAAIHCKAGKGRTGVMICAYLLHRGKFLKAQEALDFYGEVRTRDKKGVTIPSQRRYVYYYSYLLKNHLDYRPVALLFHKMMFETIPMFSGGTCNPQFVVCQLKVKIYSSNSGPTRREDKFMYFEFPQPLPVCGDIKVEFFHKQNKMLKKDKMFHFWVNTFFIPGPEETSEKVENGSLCDQEIDSICSIERADNDKEYLVLTLTKNDLDKANKDKANRYFSPNFKVKLYFTKTVEEPSNPEASSSTSVTPDVSDNEPDHYRYSDTTDSDPENEPFDEDQHTQITKV",
+      "mutate": true,
+      "note": "UniProt P60484 / ENST00000371953.8, 403 aa. Kept as a literal sequence so the batch is byte-reproducible without a UniProt round trip."
+    },
+    {
+      "id": "B",
+      "type": "ligand",
+      "ccd_codes": [
+        "PO4"
+      ],
+      "note": "Reproduced from the job spec of an existing correct run (PTEN_A121E_data.json)."
+    }
+  ],
+  "mutations": {
+    "source": "list",
+    "gene": "PTEN",
+    "include": [
+      "R173P",
+      "R47G",
+      "S170I",
+      "S170R",
+      "T131I",
+      "T202I",
+      "T26I",
+      "T26P",
+      "T277A",
+      "T277I",
+      "V175M",
+      "W111C",
+      "W111R",
+      "W274L"
+    ],
+    "exclude": []
+  },
+  "include_wt": true,
+  "output": {
+    "dir": "muts_jsons",
+    "tag": "_regen14"
+  }
+}

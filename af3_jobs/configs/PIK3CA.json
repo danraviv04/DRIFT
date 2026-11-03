@@ -1,0 +1,38 @@
+{
+  "name": "PIK3CA",
+  "description": "PI3Kalpha heterodimer: p110alpha (full length) + p85alpha niSH2, the construct of every crystal structure of this complex (2RD0, 4OVU, 3HHM, 5XGH). Variants on p110alpha.",
+  "model_seeds": 25,
+  "dialect": "alphafold3",
+  "version": 4,
+  "chains": [
+    {
+      "id": "A",
+      "type": "protein",
+      "gene": "PIK3CA",
+      "uniprot": "P42336",
+      "mutate": true,
+      "note": "p110alpha catalytic subunit, full length, 1068 aa. Byte-identical to NP_006209.2, the protein of NM_006218.4 -- the transcript ClinVar annotates PIK3CA against -- so exported positions apply to this chain with no offset. AlphaMissense uses the same canonical sequence."
+    },
+    {
+      "id": "B",
+      "type": "protein",
+      "gene": "PIK3R1",
+      "uniprot": "P27986",
+      "range": "322-600",
+      "mutate": false,
+      "note": "p85alpha niSH2 fragment (nSH2 + iSH2). 4OVU/4OVV resolve 322-600, 5XGH 322-598. The SH3/BH/RhoGAP half of full-length p85alpha is absent from every structure of the complex and would add ~445 disordered residues."
+    }
+  ],
+  "mutations": {
+    "source": "clinvar",
+    "csv": "Ground_Truths/ClinVar/clinvar_result_pik3ca.tsv",
+    "gene": "PIK3CA",
+    "include": [],
+    "exclude": []
+  },
+  "include_wt": true,
+  "output": {
+    "dir": "muts_jsons",
+    "tag": ""
+  }
+}

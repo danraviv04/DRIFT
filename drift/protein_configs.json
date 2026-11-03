@@ -1,0 +1,254 @@
+{
+  "TP53": {
+    "enabled": false,
+    "_status": "No binary label since 2026-10-13: the assay is a continuous target only (experiments/continuous_functional), never thresholded into driver/passenger. Disabled for the binary pipeline; load_continuous_configs() reads its d1 block.",
+    "d1": {
+      "mut": "P53",
+      "read_root": "PLDDTs/TP53",
+      "chain_ids": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "dirs_tars": false,
+      "source_mode": "csv_preferred",
+      "wt_csv_glob": "*WT*plddt_values.csv",
+      "mut_csv_glob": "*plddt_values.csv"
+    },
+    "label": {
+      "mode": "continuous_assay",
+      "target": "Ground_Truths/Supplementary table 3.xlsx :: Phenotypic_Selection_Model (log10)",
+      "_removed": "score_threshold at Phenotypic_Selection_Model >= 3.25 (deleted 2026-10-13)"
+    },
+    "data_revision": "2026-10-15 v6_ca: C-alpha 125-seed re-extraction; WT regenerated with the variants' templates"
+  },
+  "POLE": {
+    "_wt_reference_note": "Pinned 2026-10-18 to the 204-residue construct reference used by the strict manifest, WT controls and coordinate analyses. Do not pool POLE_WT or POLE_again_WT: N must be the total predictions per side.",
+    "d1": {
+      "mut": "POLE",
+      "read_root": "PLDDTs/POLE",
+      "chain_ids": [
+        "A"
+      ],
+      "dirs_tars": false,
+      "source_mode": "csv_preferred",
+      "wt_csv_glob": "POLE_268-471_WT_plddt_values.csv",
+      "wt_csv_expected_sources": 1,
+      "plddt_expected_residues": 204,
+      "mut_csv_glob": "*plddt_values.csv",
+      "_mut_csv_replacements_note": "2026-10-20: eight drivers were predicted with AF3 seeds 1-32 (160 predictions); every other POLE ensemble and the WT have seeds 1-25 (125). These 25-seed copies (seeds 1-25, the WT's seed numbers) replace them, so every POLE ensemble is 25 seeds x 5 samples. The 160-prediction originals stay in PLDDTs/POLE/. experiments/annotation_stages.",
+      "mut_csv_replacements": {
+        "POLE_268-471_D275A_plddt_values.csv": "PLDDTs/POLE_25seed/POLE_268-471_D275A_plddt_values.csv",
+        "POLE_268-471_D275G_plddt_values.csv": "PLDDTs/POLE_25seed/POLE_268-471_D275G_plddt_values.csv",
+        "POLE_268-471_E277G_plddt_values.csv": "PLDDTs/POLE_25seed/POLE_268-471_E277G_plddt_values.csv",
+        "POLE_268-471_P286H_plddt_values.csv": "PLDDTs/POLE_25seed/POLE_268-471_P286H_plddt_values.csv",
+        "POLE_268-471_P286L_plddt_values.csv": "PLDDTs/POLE_25seed/POLE_268-471_P286L_plddt_values.csv",
+        "POLE_268-471_P286R_plddt_values.csv": "PLDDTs/POLE_25seed/POLE_268-471_P286R_plddt_values.csv",
+        "POLE_268-471_P286S_plddt_values.csv": "PLDDTs/POLE_25seed/POLE_268-471_P286S_plddt_values.csv",
+        "POLE_268-471_T278K_plddt_values.csv": "PLDDTs/POLE_25seed/POLE_268-471_T278K_plddt_values.csv"
+      }
+    },
+    "label": {
+      "mode": "binary_csv",
+      "path": "Ground_Truths/POLE/combined_pole_labels.csv",
+      "mutation_col": "Variant",
+      "label_col": "Label"
+    }
+  },
+  "MutSalpha": {
+    "enabled": false,
+    "_status": "DISABLED 2026-09-07, superseded by the MSH2 and MSH6 entries. The structures, labels and AlphaMissense data are unchanged and still correct; this entry is retained for provenance and for reproducing the merged descriptor.",
+    "_why_disabled": "load_protein_configs() is iterated WHOLESALE -- run.py passes every config to build_d1_table with no dataset filter, and build_configured_external_gt loops all of them. Left enabled alongside MSH2/MSH6 it put the same 147 variants into the D1 table twice (151 + 109 + 42 = 302 rows for 147 variants) under two identities, which inflates pooled counts and, worse, leaks: holding out MSH2 would leave the same MSH2 variants in training as MutSalpha rows. Unlike metric_analysis/protein_configs.json -- where the MutS_alpha entry MUST stay, because the structure-metrics pipeline still runs on it and MSH2/MSH6 read its distribution summary -- nothing here needs it.",
+    "_to_reproduce_merged": "set enabled to true and disable MSH2 and MSH6, so the two layouts are never active at once.",
+    "d1": {
+      "mut": "MutS_alpha",
+      "read_root": "PLDDTs/MutS_alpha",
+      "chain_ids": [
+        "A",
+        "B"
+      ],
+      "dirs_tars": false,
+      "source_mode": "csv_preferred",
+      "wt_csv_glob": "*WT*plddt_values.csv",
+      "mut_csv_glob": "*plddt_values.csv",
+      "subunit_tokens": [
+        "MSH2",
+        "MSH6"
+      ]
+    },
+    "afm": {
+      "member_files": {
+        "MSH2": "Ground_Truths/AlphaMissense/afm_MSH2_predictions.tsv",
+        "MSH6": "Ground_Truths/AlphaMissense/afm_MSH6_predictions.tsv"
+      }
+    },
+    "label": {
+      "mode": "clinvar_by_subunit",
+      "subunit_files": {
+        "MSH2": "Ground_Truths/ClinVar/clinvar_result_msh2.csv",
+        "MSH6": "Ground_Truths/ClinVar/clinvar_result_msh6.csv"
+      }
+    }
+  },
+  "KRAS": {
+    "enabled": false,
+    "_status": "No binary label since 2026-10-13: the assay is a continuous target only (experiments/continuous_functional), never thresholded into driver/passenger. Disabled for the binary pipeline; load_continuous_configs() reads its d1 block.",
+    "isoform": "KRAS4B (UniProt P01116-2, ENST00000311936, 188 aa)",
+    "_isoform_note": "Switched from KRAS4A to KRAS4B on 2026-10-13: structures (PLDDTs/KRAS, 979 mutants + WT), AlphaMissense (afm_KRAS_predictions.tsv) and the DMS screen are all 4B. The 4A data live in PLDDTs/KRAS4A_legacy and Ground_Truths/AlphaMissense/legacy_4A. This non-underscore field also changes the cache fingerprint so no 4A-era cache is reused.",
+    "d1": {
+      "mut": "KRAS",
+      "read_root": "PLDDTs/KRAS",
+      "chain_ids": [
+        "A"
+      ],
+      "dirs_tars": false,
+      "source_mode": "csv_preferred",
+      "wt_csv_glob": "*WT*plddt_values.csv",
+      "mut_csv_glob": "*plddt_values.csv"
+    },
+    "label": {
+      "mode": "continuous_assay",
+      "target": "Ground_Truths/KRAS/Extended Data Table 1.xlsx :: KRAS GOF DMS Screen :: HA1E_WT_LFC",
+      "_removed": "binary_csv from the manifest's LFC >0.68 / <=0.1 labels (deleted 2026-10-13)"
+    }
+  },
+  "VHL": {
+    "enabled": true,
+    "_status": "ENABLED. Structures, transcript-attributed ClinVar labels, and AlphaMissense predictions are present. The current cached DRIFT intersection contains 124 variants (105 driver / 19 passenger).",
+    "_blocked_on": "No data-loading blocker. VHL labels are aligned with metric_analysis through the transcript-matched strict canonical manifest; retain class-imbalance and six-exclusion disclosure in reported results.",
+    "_label_route_divergence": "RESOLVED: both pipelines now use the transcript-matched strict canonical VHL cohort, containing 124 variants (105 driver / 19 passenger). The six permissive historical aliases without a VHL NM-transcript protein substitution are excluded.",
+    "_labels_ok": "The strict canonical cohort retains 124 of the 130 structural mutants: 105 driver / 19 passenger. Six historical Protein change aliases are excluded because their source records do not contain a VHL NM-transcript protein substitution.",
+    "_todo": [
+      "DONE - re-copied and verified the 12 corrupt archives (full decompression, 2026-08-09).",
+      "DONE - pLDDTs extracted: PLDDTs/VHL holds 131 CSVs (1 h 32 m).",
+      "DONE - added Ground_Truths/AlphaMissense/afm_VHL_predictions.tsv.",
+      "DONE - aligned the VHL label route with metric_analysis at 105/19 on the strict canonical cohort.",
+      "VHL is an AlphaFold3 complex: chain A is VHL and is the only configured scoring chain."
+    ],
+    "d1": {
+      "mut": "VHL",
+      "read_root": "PLDDTs/VHL",
+      "chain_ids": [
+        "A"
+      ],
+      "dirs_tars": false,
+      "source_mode": "csv_preferred",
+      "wt_csv_glob": "*WT*plddt_values.csv",
+      "mut_csv_glob": "*plddt_values.csv"
+    },
+    "label": {
+      "mode": "clinvar_by_subunit",
+      "subunit_files": {
+        "VHL": "Ground_Truths/ClinVar/clinvar_result_vhl.csv"
+      }
+    }
+  },
+  "PTEN": {
+    "enabled": true,
+    "_status": "ENABLED with the ClinVar label route. pLDDT CSVs and AlphaMissense predictions are present. The current cached DRIFT intersection contains 257 variants (248 driver / 9 passenger).",
+    "_blocked_on": "No data-loading blocker. PTEN remains extremely class-imbalanced (9 passengers), so per-gene uncertainty and label-route disclosure are required.",
+    "_data": "264 archives at $DRIFT_ARCHIVE_ROOT/PTEN = 263 mutants + WT, ALL verified by full gzip decompression (0 corrupt, ~0.23 GB each uncompressed). Two disjoint batches: 128 on 2026-08-09 (127 mutants + WT, 0 passengers) and 136 on 2026-08-11 (which supplied all 9 passengers).",
+    "_labels": "The transcript-matched strict canonical cohort contains 257 PTEN variants: 248 driver / 9 passenger. The passengers are A79T, D107N, P354Q, P354S, Q298E, R161K, S229T, S294R and S360G. Five initiator-codon models (M1I, M1L, M1R, M1T, M1V) are excluded because a full-length residue-1 substitution does not represent start loss. F81L remains unlabelled because its formerly Pathogenic ClinVar record (VariationID 1802604) was retired and is absent from the archived export.",
+    "_label_route_decision": "RESOLVED: DRIFT and metric_analysis use the same transcript-matched strict canonical cohort. PTEN remains severely class-imbalanced at 248 driver / 9 passenger, so per-gene uncertainty and label provenance must be disclosed. A functional/DMS source remains the route to a better-powered minority class.",
+    "_todo": [
+      "DONE - extracted pLDDTs and added AlphaMissense predictions.",
+      "DONE - selected transcript-attributed ClinVar labels for the current DRIFT run.",
+      "DONE - confirmed label-route alignment with metric_analysis; disclose the 248/9 class imbalance in reported results."
+    ],
+    "d1": {
+      "mut": "PTEN",
+      "read_root": "PLDDTs/PTEN",
+      "chain_ids": [
+        "A"
+      ],
+      "dirs_tars": false,
+      "source_mode": "csv_preferred",
+      "wt_csv_glob": "*WT*plddt_values.csv",
+      "mut_csv_glob": "*plddt_values.csv"
+    },
+    "label": {
+      "mode": "clinvar_by_subunit",
+      "subunit_files": {
+        "PTEN": "Ground_Truths/ClinVar/clinvar_result_pten.csv"
+      }
+    }
+  },
+  "MSH2": {
+    "enabled": true,
+    "_status": "ENABLED. MSH2 is one subunit of the modelled MutSalpha heterodimer, split out as its own dataset (2026-09-07). Structures, chain and wild-type reference are shared with MSH6; the descriptor is restricted to MSH2's own residue rows.",
+    "_split_rationale": "The merged MutSalpha dataset averaged every descriptor over all 2,294 residues of MSH2+MSH6 regardless of which subunit carried the mutation, so 59% of an MSH2 variant's D1 and 41% of an MSH6 variant's came from the unmutated partner. Merged AUC 0.701 was an average of two unlike datasets (MSH2 0.822, MSH6 0.625 under the merged descriptor). See experiments/mutsalpha_subunit_split/.",
+    "_shared_wild_type": "MutS_alpha_WT_plddt_values.csv is the single wild-type ensemble for both datasets: one prediction of the complex represents both native subunits. Each dataset reads its own rows out of it.",
+    "d1": {
+      "mut": "MutS_alpha",
+      "read_root": "PLDDTs/MutS_alpha",
+      "chain_ids": [
+        "A"
+      ],
+      "dirs_tars": false,
+      "source_mode": "csv_preferred",
+      "wt_csv_glob": "*WT*plddt_values.csv",
+      "mut_csv_glob": "*_MSH2_*plddt_values.csv",
+      "plddt_row_range": [
+        0,
+        934
+      ]
+    },
+    "label": {
+      "mode": "clinvar_by_subunit",
+      "subunit_files": {
+        "MSH2": "Ground_Truths/ClinVar/clinvar_result_msh2.csv"
+      }
+    },
+    "data_revision": "2026-10-15 v6_ca: WT is C-alpha (was backbone N) and regenerated with the variants' templates"
+  },
+  "MSH6": {
+    "enabled": true,
+    "_status": "ENABLED. MSH6 is one subunit of the modelled MutSalpha heterodimer, split out as its own dataset (2026-09-07); the descriptor is restricted to MSH6's own residue rows. Since 2026-10-12 it reads the G:T-mismatch rerun (MutS_alpha_MSH6_GT), which has its own WT folded on the same duplex; MSH2 keeps the original complex and WT.",
+    "_split_rationale": "The merged MutSalpha dataset averaged every descriptor over all 2,294 residues of MSH2+MSH6 regardless of which subunit carried the mutation, so 59% of an MSH2 variant's D1 and 41% of an MSH6 variant's came from the unmutated partner. Merged AUC 0.701 was an average of two unlike datasets (MSH2 0.822, MSH6 0.625 under the merged descriptor). See experiments/mutsalpha_subunit_split/.",
+    "_shared_wild_type": "MutS_alpha_MSH6_GT_WT_plddt_values.csv is MSH6's wild type: the same MSH2-MSH6 complex folded on the 21/21-nt G:T duplex its variants use. Until 2026-10-12 MSH6 shared MSH2's MutS_alpha_WT, whose 21/20-nt duplex did not match the old MSH6 batch's 136/137-nt one.",
+    "d1": {
+      "mut": "MutS_alpha_MSH6_GT",
+      "read_root": "PLDDTs/MutS_alpha_MSH6_GT",
+      "chain_ids": [
+        "B"
+      ],
+      "dirs_tars": false,
+      "source_mode": "csv_preferred",
+      "wt_csv_glob": "*WT*plddt_values.csv",
+      "mut_csv_glob": "*_MSH6_*plddt_values.csv",
+      "plddt_row_range": [
+        934,
+        2294
+      ]
+    },
+    "label": {
+      "mode": "clinvar_by_subunit",
+      "subunit_files": {
+        "MSH6": "Ground_Truths/ClinVar/clinvar_result_msh6.csv"
+      }
+    }
+  },
+  "PIK3CA": {
+    "enabled": true,
+    "_status": "ENABLED 2026-10-12 as an evaluation dataset. PI3Kalpha heterodimer: p110alpha (chain A, 1068 residues, mutated) + the p85alpha niSH2 fragment (chain B); the pLDDT matrices hold chain A only. Labels are transcript-matched ClinVar germline pathogenic/benign (84 D / 7 P): mostly PROS overgrowth and cancer hotspots, not somatic driver ground truth.",
+    "d1": {
+      "mut": "PIK3CA",
+      "read_root": "PLDDTs/PIK3CA",
+      "chain_ids": [
+        "A"
+      ],
+      "dirs_tars": false,
+      "source_mode": "csv_preferred",
+      "wt_csv_glob": "*WT*plddt_values.csv",
+      "mut_csv_glob": "*plddt_values.csv"
+    },
+    "label": {
+      "mode": "clinvar_by_subunit",
+      "subunit_files": {
+        "PIK3CA": "Ground_Truths/ClinVar/clinvar_result_pik3ca.tsv"
+      }
+    },
+    "data_revision": "2026-10-15 v6_ca: WT regenerated with the variants' templates"
+  }
+}

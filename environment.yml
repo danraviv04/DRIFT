@@ -1,0 +1,51 @@
+# Software environment for the DRIFT analyses.
+#
+#   conda env create -f environment.yml
+#   conda activate drift
+#   pip install -e .            # the drift, metric_analysis and af3_jobs packages
+#
+# Versions are the exact ones the paper's results were computed with (conda env
+# `thesis_core`, macOS arm64, Python 3.11.14). Only packages the code imports are listed;
+# the original working environment also held notebooks and unrelated ML tooling.
+name: drift
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+dependencies:
+  - python=3.11.14
+  - pip
+  # numerics and statistics
+  - numpy=2.4.1
+  - pandas=2.3.3
+  - scipy=1.17.0
+  - scikit-learn=1.8.0
+  - statsmodels=0.14.6
+  - numba=0.65.1              # seed-structure resampling (experiments/seed_structure)
+  - threadpoolctl=3.6.0
+  - pytorch=2.9.1             # imported by drift.core; all paper runs used the CPU
+  # structures and I/O
+  - biopython=1.86            # mmCIF parsing
+  - pyarrow=22.0.0            # parquet coordinate caches
+  - openpyxl=3.1.5            # assay tables (.xlsx) read through pandas
+  - zstd=1.5.7                # archive decompression in the shell runners
+  - usalign=20241201          # US-align binary, structure superposition (bioconda)
+  # figures
+  - matplotlib-base=3.10.8
+  - seaborn=0.13.2
+  - pillow=12.1.0
+  # utilities and tests
+  - tqdm=4.67.1
+  - pytest=8
+  - pip:
+      - pypdf==6.16.1         # assembles the figure pages (figures/make_figures.py)
+  # Optional, not needed for any result in the paper:
+  # - wandb=0.25.1            # progress logging, off unless enabled
+  # - pybigwig=0.3.25         # conservation tooling (metric_analysis/pipeline/library/conservation.py)
+  # - pip: [pymupdf==1.28.2]  # PDF thumbnails in the results galleries (collect_results)
+#
+# Not installable with conda, needed only for the steps named:
+#   AlphaFold 3: 3.0.1 on the Athena cluster, plus a 3.0.3 build for the 296 TP53 seed
+#     extensions (Supplementary Note S6). Job inputs come from `python -m af3_jobs`.
+#   ChimeraX 1.11.1: Figure 1b renders (experiments/fig1b_corefit_models/render_panel_b.py).
+#   pigz, Slurm: the local and cluster AlphaFold runners (af3_jobs/local_runner).

@@ -1,0 +1,617 @@
+{
+  "MutS_alpha": {
+    "output_prefix": "MutS_alpha",
+    "read_root_path": "$DRIFT_ARCHIVE_ROOT/MutSalpha",
+    "source_type": "tar",
+    "artifact_glob": "*.tar.gz",
+    "chain_ids": [
+      "A",
+      "B"
+    ],
+    "cache_dir": "metric_analysis/structure_metrics/MutS_alpha/ensemble_aware/cache",
+    "sweep_dir": "metric_analysis/structure_metrics/MutS_alpha/ensemble_aware/ensemble_sweeps",
+    "archive_root": "$DRIFT_ARCHIVE_ROOT/MutSalpha",
+    "protein_chains": [
+      "A",
+      "B"
+    ],
+    "dna_chains": [
+      "C",
+      "D"
+    ],
+    "wt_hint": "MutS_alpha_MSH2_WT_data",
+    "ensemble_sizes": [
+      1,
+      5,
+      10,
+      20,
+      40,
+      60,
+      90
+    ],
+    "ensemble_repeats_by_size": {
+      "1": 50,
+      "5": 50,
+      "10": 40,
+      "20": 30,
+      "40": 20,
+      "60": 15,
+      "90": 10
+    },
+    "label_mode": "clinvar_by_gene",
+    "clinvar_csv_by_gene": {
+      "MSH2": "Ground_Truths/ClinVar/clinvar_result_msh2.csv",
+      "MSH6": "Ground_Truths/ClinVar/clinvar_result_msh6.csv"
+    },
+    "plddt_profile_driver": "A604D",
+    "plddt_profile_passenger": "A256G",
+    "plddt_residue_segments": [
+      {
+        "chain_id": "A",
+        "display_name": "MSH2",
+        "residue_start": 1,
+        "length": 934
+      },
+      {
+        "chain_id": "B",
+        "display_name": "MSH6",
+        "residue_start": 1,
+        "length": 1360
+      }
+    ],
+    "plddt_profile_driver_chains": [
+      "A"
+    ],
+    "plddt_profile_passenger_chains": [
+      "A"
+    ],
+    "plddt_outlier_threshold": 0.01
+  },
+  "POLE": {
+    "output_prefix": "POLE",
+    "read_root_path": "$DRIFT_ARCHIVE_ROOT/POLE_folders",
+    "source_type": "folder",
+    "chain_ids": [
+      "A"
+    ],
+    "cache_dir": "metric_analysis/structure_metrics/POLE/ensemble_aware/cache",
+    "coord_cache_dir": "metric_analysis/structure_metrics/POLE/ensemble_aware/cache_corefit",
+    "coord_frames": {
+      "usalign_first_chain": {
+        "coord_cache_dir": "metric_analysis/structure_metrics/POLE/ensemble_aware/cache_usalign",
+        "sweep_dir": "metric_analysis/structure_metrics/POLE/ensemble_aware_usalign/ensemble_sweeps"
+      }
+    },
+    "_coord_frame": "2026-10-15: coordinate metrics read the WT rigid-core-fit cache (coord_cache_dir, built from the USalign cache by cache_builders/subunit_core_fit.py, no drive): one WT-defined core of confident, distance-stable residues, the same for every variant. USalign as the builders called it superposes on the first chain only. COORD_FRAME=usalign_first_chain switches to the control cache (same structures, old coordinates; experiments/coord_core_fit). DNA caches and the structure index stay in cache_dir.",
+    "sweep_dir": "metric_analysis/structure_metrics/POLE/ensemble_aware/ensemble_sweeps",
+    "archive_root": "$DRIFT_ARCHIVE_ROOT/POLE_folders",
+    "wt_hint": "POLE_WT",
+    "wt_artifact": "POLE_268-471_WT",
+    "protein_chains": [
+      "A"
+    ],
+    "dna_chains": [
+      "B",
+      "C"
+    ],
+    "ensemble_sizes": [
+      1,
+      5,
+      10,
+      20,
+      40,
+      60,
+      90
+    ],
+    "ensemble_repeats_by_size": {
+      "1": 50,
+      "5": 50,
+      "10": 40,
+      "20": 30,
+      "40": 20,
+      "60": 15,
+      "90": 10
+    },
+    "label_mode": "csv_lookup",
+    "labels_csv": "Ground_Truths/POLE/combined_pole_labels.csv",
+    "plddt_profile_driver": "P286R",
+    "plddt_profile_passenger": "M295K",
+    "plddt_residue_start": 268,
+    "plddt_outlier_threshold": 0.01
+  },
+  "TP53": {
+    "enabled": false,
+    "_status": "No binary label since 2026-10-13: the assay is a continuous target only (experiments/continuous_functional), never thresholded. Disabled for 'all'; run by name for pLDDT extraction of new batches (the only stage it supports).",
+    "output_prefix": "TP53",
+    "_source": "2026-10-14: primary TP53 cohort = $DRIFT_ARCHIVE_ROOT/TP53, the merged seeds 1-25 archives (125 predictions; output_gen_only seeds 1-20 + TP53_extensions seeds 21-25, merged by af3_jobs/local_runner/merge_seed_extensions.py, spot-checked by experiments/tp53_merge_check). The old 100-prediction source was $DRIFT_ARCHIVE_ROOT/output_gen_only.",
+    "read_root_path": "$DRIFT_ARCHIVE_ROOT/TP53",
+    "source_type": "tar",
+    "artifact_glob": "*.tar.gz",
+    "chain_ids": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "cache_dir": "metric_analysis/structure_metrics/TP53/ensemble_aware/cache",
+    "sweep_dir": "metric_analysis/structure_metrics/TP53/ensemble_aware/ensemble_sweeps",
+    "archive_root": "$DRIFT_ARCHIVE_ROOT/TP53",
+    "protein_chains": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "dna_chains": [
+      "E",
+      "F"
+    ],
+    "wt_hint": "P53_WT_with_ZN_and_DNA",
+    "wt_artifact": "P53_WT_vartmpl_with_ZN_and_DNA",
+    "ensemble_sizes": [
+      1,
+      5,
+      10,
+      20,
+      40,
+      60,
+      90
+    ],
+    "ensemble_repeats_by_size": {
+      "1": 50,
+      "5": 50,
+      "10": 40,
+      "20": 30,
+      "40": 20,
+      "60": 15,
+      "90": 10
+    },
+    "plddt_residue_segments": [
+      {
+        "chain_id": "A",
+        "residue_start": 1,
+        "length": 393
+      },
+      {
+        "chain_id": "B",
+        "residue_start": 1,
+        "length": 393
+      },
+      {
+        "chain_id": "C",
+        "residue_start": 1,
+        "length": 393
+      },
+      {
+        "chain_id": "D",
+        "residue_start": 1,
+        "length": 393
+      }
+    ],
+    "plddt_outlier_threshold": 0.01,
+    "label_mode": "continuous_assay",
+    "structure_metrics_stages": [
+      "plddt"
+    ],
+    "_wt_artifact": "Pinned 2026-10-15: the WT regenerated with the variants' templates (6XRE kept; af3_jobs.wt_from_variant from A119D). The old WT stays in the cache; its pLDDT CSV is in PLDDTs/_wt_legacy_2026-10-15."
+  },
+  "KRAS": {
+    "enabled": false,
+    "_status": "No binary label since 2026-10-13: the assay is a continuous target only (experiments/continuous_functional), never thresholded. Disabled for 'all'; run by name for pLDDT extraction of new batches (the only stage it supports).",
+    "_isoform": "KRAS4B (P01116-2, 188 aa) since 2026-10-13; the 4A outputs are in structure_metrics/KRAS4A_legacy",
+    "output_prefix": "KRAS",
+    "read_root_path": "$DRIFT_ARCHIVE_ROOT/KRAS4B_Mutations",
+    "source_type": "tar",
+    "artifact_glob": "*.tar.gz",
+    "chain_ids": [
+      "A"
+    ],
+    "cache_dir": "metric_analysis/structure_metrics/KRAS/ensemble_aware/cache",
+    "sweep_dir": "metric_analysis/structure_metrics/KRAS/ensemble_aware/ensemble_sweeps",
+    "archive_root": "$DRIFT_ARCHIVE_ROOT/KRAS4B_Mutations",
+    "protein_chains": [
+      "A"
+    ],
+    "wt_hint": "KRAS_WT",
+    "ensemble_sizes": [
+      1,
+      5,
+      10,
+      20,
+      40,
+      60,
+      90
+    ],
+    "ensemble_repeats_by_size": {
+      "1": 50,
+      "5": 50,
+      "10": 40,
+      "20": 30,
+      "40": 20,
+      "60": 15,
+      "90": 10
+    },
+    "plddt_residue_start": 1,
+    "plddt_outlier_threshold": 0.01,
+    "label_mode": "continuous_assay",
+    "structure_metrics_stages": [
+      "plddt"
+    ]
+  },
+  "VHL": {
+    "enabled": true,
+    "_status": "ACTIVE (\"enabled\": true). All 131 pLDDT CSVs and the structure-metrics outputs are present. The strict canonical structural cohort contains 124 variants (105 driver / 19 passenger); six of the 130 mutant artifacts are excluded because their ClinVar aliases lack a target-gene NM-transcript protein substitution.",
+    "_data_history": "The initial copy was CORRUPT: 12 of 131 archives were not gzip at all (interrupted NTFS copy - they began mid-file with CIF headers, raw CSV, INDX blocks or JSON), alphabetically consecutive D121V..E53K plus - fatally - WT, with no valid WT there was no D1/RMSF/RMSD reference. Re-copied 2026-08-09 18:58 and re-verified: all 12 now fully decompress to 5.37 GB each, matching the known-good files. NTFS on macOS is read-only, so a repeat needs chkdsk on Windows or a fresh copy - and verify with full decompression, not just the gzip magic bytes (the failure mode leaves file size and mtime intact while the cluster mapping points elsewhere).",
+    "_timings": "pLDDT extraction 1 h 32 m (131 complex archives, ~0.22 s/CIF x 126 models); rmsf ~2.6 h. Budget for that if VHL is ever regenerated.",
+    "_labels_ok": "The shared labels.py loader now uses target-gene transcript matching for VHL. The strict canonical cohort retains 124 of 130 structural mutants: 105 driver / 19 passenger. Six permissive historical aliases are excluded because the source record has no VHL NM-transcript protein substitution.",
+    "_chains": "AlphaFold3 CRL2^VHL complex, 2122 residues over 6 chains, identified by residue count: A=VHL 213 (pVHL30, the mutated protein), B=Elongin B 118, C=Elongin C 112, D=Cullin-2 745, E=RBX1 108, F=HIF-1a 826 (the substrate). chain_ids/protein_chains stay ['A'] ON PURPOSE: chain_ids drives pLDDT extraction, so including B-F would average D1 over 1909 unmutated partner residues (VHL is only 10% of the model), diluting the mutation signal ~10x and breaking comparability with the other proteins - where chain_ids is likewise only the mutated protein (TP53 A-D are four copies of TP53; MutS_alpha A,B are MSH2+MSH6). The partners instead feed partner_chains for interface RMSF, which is the biologically right place for them: VHL is a substrate-recognition subunit and its pathogenic mutations act by disrupting HIF (F) and Elongin C (C) binding. There is no DNA, so dna_chains is intentionally absent and the protein-DNA stage correctly skips.",
+    "_interface_preflight": "Verified 2026-08-11 against the persisted aligned WT reference (structure_metrics/VHL/rmsf/global_wt_reference.pdb) BEFORE committing to the ~2.6 h rmsf re-run: partner_chains ['B','C','D','E','F'] yields 68 of VHL's 213 residues at an interface (32%), contacting F/HIF-1a 34, C/Elongin C 21, D/Cullin-2 7, B/Elongin B 6. The residue set (67-145 then 152-188) matches VHL's known domain layout - beta-domain binds HIF, alpha-domain binds Elongin C - which independently corroborates the chain assignment. Note extract_chain_interface_residues is symmetric (it runs both A->B and B->A), so the raw table has 147 rows: 68 VHL-side plus 79 partner-side. Only the VHL-side rows match VHL's RMSF data, which is keyed on (chain, resid). Existing DNA proteins show the same two-direction shape (POLE: 30 + 12), so this is the normal output format, not a VHL quirk.",
+    "output_prefix": "VHL",
+    "read_root_path": "$DRIFT_ARCHIVE_ROOT/VHL",
+    "source_type": "tar",
+    "artifact_glob": "*.tar.gz",
+    "chain_ids": [
+      "A"
+    ],
+    "cache_dir": "metric_analysis/structure_metrics/VHL/ensemble_aware/cache",
+    "coord_cache_dir": "metric_analysis/structure_metrics/VHL/ensemble_aware/cache_corefit",
+    "coord_frames": {
+      "usalign_first_chain": {
+        "coord_cache_dir": "metric_analysis/structure_metrics/VHL/ensemble_aware/cache_usalign",
+        "sweep_dir": "metric_analysis/structure_metrics/VHL/ensemble_aware_usalign/ensemble_sweeps"
+      }
+    },
+    "_coord_frame": "2026-10-15: coordinate metrics read the WT rigid-core-fit cache (coord_cache_dir, built from the USalign cache by cache_builders/subunit_core_fit.py, no drive): one WT-defined core of confident, distance-stable residues, the same for every variant. USalign as the builders called it superposes on the first chain only. COORD_FRAME=usalign_first_chain switches to the control cache (same structures, old coordinates; experiments/coord_core_fit). DNA caches and the structure index stay in cache_dir.",
+    "sweep_dir": "metric_analysis/structure_metrics/VHL/ensemble_aware/ensemble_sweeps",
+    "archive_root": "$DRIFT_ARCHIVE_ROOT/VHL",
+    "protein_chains": [
+      "A"
+    ],
+    "partner_chains": [
+      "B",
+      "C",
+      "D",
+      "E",
+      "F"
+    ],
+    "wt_hint": "VHL_WT",
+    "ensemble_sizes": [
+      1,
+      5,
+      10,
+      20,
+      40,
+      60,
+      90
+    ],
+    "ensemble_repeats_by_size": {
+      "1": 50,
+      "5": 50,
+      "10": 40,
+      "20": 30,
+      "40": 20,
+      "60": 15,
+      "90": 10
+    },
+    "label_mode": "clinvar",
+    "clinvar_gene": "VHL",
+    "clinvar_csv": "Ground_Truths/ClinVar/clinvar_result_vhl.csv",
+    "plddt_profile_driver": "D121V",
+    "plddt_profile_passenger": "E186K",
+    "plddt_residue_start": 1,
+    "plddt_outlier_threshold": 0.01
+  },
+  "PTEN": {
+    "enabled": true,
+    "_status": "ACTIVE (\"enabled\": true). PTEN pLDDT CSVs and structure-metrics outputs are present. The strict canonical structural cohort contains 257 variants (248 driver / 9 passenger); five residue-1 start-loss models are excluded, and F81L remains unlabelled because its ClinVar record was retired.",
+    "_data": "264 archives in $DRIFT_ARCHIVE_ROOT/PTEN = 263 mutants + WT, ALL verified by full gzip decompression (0 corrupt, each ~0.23 GB uncompressed, 202 s for the sweep). Two disjoint generation batches: 128 on 2026-08-09 (127 mutants + WT) and 136 on 2026-08-11. No overlap.",
+    "_labels": "The transcript-matched strict cohort contains 248 driver / 9 passenger variants. The 9 passengers - A79T, D107N, P354Q, P354S, Q298E, R161K, S229T, S294R, S360G - are canonical PTEN missense benigns and all came from the 08-11 batch; the 08-09 batch had none. Five initiator-codon models (M1I, M1L, M1R, M1T, M1V) are excluded because a full-length residue-1 substitution does not represent start loss. F81L is unlabelled: it was generated when ClinVar listed it Pathogenic (VariationID 1802604), but that record has since been retired and is absent from the archived export.",
+    "_caveats": "Class balance is approximately 27.6:1 (248:9), i.e. ~1.8 passengers per fold under 5-fold CV, so treat per-gene AUC as directional and always quote uncertainty. ClinVar's ceiling is 44 canonical-missense benign codes total and only these 9 map to structures, so generating more drivers cannot improve minority-class power. A functional/DMS source remains the route to a properly powered PTEN cohort; ClinVar makes it usable, not strong.",
+    "_known_gap": "RESOLVED for the canonical cohort: labels.py now filters ClinVar records by the target-gene NM transcript in Name, and the strict manifest excludes residue-1 start-loss models. Wrong-gene and wrong-isoform aliases from the permissive Protein change route are no longer analytical-cohort inputs.",
+    "output_prefix": "PTEN",
+    "read_root_path": "$DRIFT_ARCHIVE_ROOT/PTEN",
+    "source_type": "tar",
+    "artifact_glob": "*.tar.gz",
+    "chain_ids": [
+      "A"
+    ],
+    "cache_dir": "metric_analysis/structure_metrics/PTEN/ensemble_aware/cache",
+    "coord_cache_dir": "metric_analysis/structure_metrics/PTEN/ensemble_aware/cache_corefit",
+    "coord_frames": {
+      "usalign_first_chain": {
+        "coord_cache_dir": "metric_analysis/structure_metrics/PTEN/ensemble_aware/cache_usalign",
+        "sweep_dir": "metric_analysis/structure_metrics/PTEN/ensemble_aware_usalign/ensemble_sweeps"
+      }
+    },
+    "_coord_frame": "2026-10-15: coordinate metrics read the WT rigid-core-fit cache (coord_cache_dir, built from the USalign cache by cache_builders/subunit_core_fit.py, no drive): one WT-defined core of confident, distance-stable residues, the same for every variant. USalign as the builders called it superposes on the first chain only. COORD_FRAME=usalign_first_chain switches to the control cache (same structures, old coordinates; experiments/coord_core_fit). DNA caches and the structure index stay in cache_dir.",
+    "sweep_dir": "metric_analysis/structure_metrics/PTEN/ensemble_aware/ensemble_sweeps",
+    "archive_root": "$DRIFT_ARCHIVE_ROOT/PTEN",
+    "protein_chains": [
+      "A"
+    ],
+    "wt_hint": "PTEN_WT",
+    "wt_artifact": "PTEN_WT",
+    "_wt_artifact": "Pinned 2026-10-06. Since 09-23 the drive also holds PTEN_WT_seeds26-200 (the 876-model WT-null pool), so 'WT' matches two archives and the rmsf stage refuses to guess. PTEN_WT is the 125-model reference ensemble.",
+    "ensemble_sizes": [
+      1,
+      5,
+      10,
+      20,
+      40,
+      60,
+      90
+    ],
+    "ensemble_repeats_by_size": {
+      "1": 50,
+      "5": 50,
+      "10": 40,
+      "20": 30,
+      "40": 20,
+      "60": 15,
+      "90": 10
+    },
+    "label_mode": "clinvar",
+    "clinvar_gene": "PTEN",
+    "clinvar_csv": "Ground_Truths/ClinVar/clinvar_result_pten.csv",
+    "plddt_profile_driver": "A121E",
+    "plddt_profile_passenger": "A79T",
+    "plddt_residue_start": 1,
+    "plddt_outlier_threshold": 0.01
+  },
+  "MSH2": {
+    "enabled": true,
+    "_status": "ENABLED for pLDDT-based endpoints. MSH2 is one subunit of the modelled MutSalpha heterodimer, split out as its own dataset (2026-09-07).",
+    "_scope": "Pre-extracted pLDDT only, enforced by structure_metrics_stages in the runner: raw plddt extraction stays on the parent complex. (Until 2026-11-03 the list also held the notebook stages and ensemble_aware, which the release no longer has.)",
+    "_cohort_route": "The canonical cohort loader reads MutS_alpha's summary, filters _MSH2_ source filenames, and applies plddt_row_range. The separate MSH2 gallery summary is not the canonical cohort source.",
+    "output_prefix": "MSH2",
+    "cohort_parent": "MutS_alpha",
+    "cohort_subunit_token": "MSH2",
+    "plddt_row_range": [
+      0,
+      934
+    ],
+    "chain_ids": [
+      "A"
+    ],
+    "plddt_residue_start": 1,
+    "plddt_outlier_threshold": 0.01,
+    "ensemble_sizes": [
+      1,
+      5,
+      10,
+      20,
+      40,
+      60,
+      90
+    ],
+    "ensemble_repeats_by_size": {
+      "1": 50,
+      "5": 50,
+      "10": 40,
+      "20": 30,
+      "40": 20,
+      "60": 15,
+      "90": 10
+    },
+    "label_mode": "clinvar",
+    "clinvar_gene": "MSH2",
+    "clinvar_csv": "Ground_Truths/ClinVar/clinvar_result_msh2.csv",
+    "plddt_profile_driver": "A604D",
+    "plddt_profile_passenger": "A256G",
+    "_plddt_source": "plddt_dir points at the PARENT complex's already-extracted CSVs, so the `plddt` stage is never needed and $DRIFT_ARCHIVE_ROOT is never read. plddt_row_range + cohort_subunit_token restrict every read to this subunit's rows and files (see structure_metrics.plddt_scope).",
+    "read_root_path": "$DRIFT_ARCHIVE_ROOT/MutSalpha",
+    "source_type": "tar",
+    "protein_chains": [
+      "A"
+    ],
+    "plddt_dir": "PLDDTs/MutS_alpha",
+    "cache_dir": "metric_analysis/structure_metrics/MSH2/ensemble_aware/cache_corefit",
+    "sweep_dir": "metric_analysis/structure_metrics/MSH2/ensemble_aware/ensemble_sweeps",
+    "coord_frames": {
+      "usalign_first_chain": {
+        "coord_cache_dir": "metric_analysis/structure_metrics/MSH2/ensemble_aware/cache_usalign",
+        "sweep_dir": "metric_analysis/structure_metrics/MSH2/ensemble_aware_usalign/ensemble_sweeps"
+      }
+    },
+    "structure_metrics_stages": [
+      "plddt_distribution"
+    ],
+    "_coord_frame": "2026-10-15: coordinate metrics read the WT rigid-core-fit cache (coord_cache_dir, built from the USalign cache by cache_builders/subunit_core_fit.py, no drive): one WT-defined core of confident, distance-stable residues, the same for every variant. USalign as the builders called it superposes on the first chain only. COORD_FRAME=usalign_first_chain switches to the control cache (same structures, old coordinates; experiments/coord_core_fit). DNA caches and the structure index stay in cache_dir. No wt_artifact here: the pLDDT stages match it against CSV names, and MSH2's WT CSV kept the parent's name (MutS_alpha_WT_plddt_values.csv); the core-fit cache holds exactly one WT, MutS_alpha_MSH2_WT_vartmpl_data."
+  },
+  "MSH6": {
+    "enabled": true,
+    "_status": "ENABLED for pLDDT-based endpoints. MSH6 is one subunit of the modelled MutSalpha heterodimer, split out as its own dataset (2026-09-07). Since 2026-10-12 its structures are the G:T-mismatch rerun (parent MutS_alpha_MSH6_GT, own WT on the same duplex); the 42 variants of the earlier batch, folded on a 136/137-nt duplex against MSH2's 21/20-nt WT, are superseded and stay in PLDDTs/MutS_alpha for provenance only.",
+    "_scope": "Pre-extracted pLDDT only, enforced by structure_metrics_stages in the runner: raw plddt extraction stays on the parent complex. (Until 2026-11-03 the list also held the notebook stages and ensemble_aware, which the release no longer has.)",
+    "_cohort_route": "The canonical cohort loader reads MutS_alpha_MSH6_GT's summary, filters _MSH6_ source filenames, and applies plddt_row_range. The separate MSH6 gallery summary is not the canonical cohort source.",
+    "output_prefix": "MSH6",
+    "cohort_parent": "MutS_alpha_MSH6_GT",
+    "cohort_subunit_token": "MSH6",
+    "plddt_row_range": [
+      934,
+      2294
+    ],
+    "chain_ids": [
+      "B"
+    ],
+    "plddt_residue_start": 1,
+    "plddt_outlier_threshold": 0.01,
+    "ensemble_sizes": [
+      1,
+      5,
+      10,
+      20,
+      40,
+      60,
+      90
+    ],
+    "ensemble_repeats_by_size": {
+      "1": 50,
+      "5": 50,
+      "10": 40,
+      "20": 30,
+      "40": 20,
+      "60": 15,
+      "90": 10
+    },
+    "label_mode": "clinvar",
+    "clinvar_gene": "MSH6",
+    "clinvar_csv": "Ground_Truths/ClinVar/clinvar_result_msh6.csv",
+    "plddt_profile_driver": "E1193K",
+    "plddt_profile_passenger": "E122K",
+    "_plddt_source": "plddt_dir points at the PARENT complex's already-extracted CSVs (PLDDTs/MutS_alpha_MSH6_GT), so the `plddt` stage is never needed and $DRIFT_ARCHIVE_ROOT is never read. plddt_row_range + cohort_subunit_token restrict every read to this subunit's rows and files (see structure_metrics.plddt_scope).",
+    "read_root_path": "$DRIFT_ARCHIVE_ROOT/MSH6_GT",
+    "source_type": "tar",
+    "protein_chains": [
+      "B"
+    ],
+    "plddt_dir": "PLDDTs/MutS_alpha_MSH6_GT",
+    "cache_dir": "metric_analysis/structure_metrics/MSH6/ensemble_aware/cache_corefit",
+    "sweep_dir": "metric_analysis/structure_metrics/MSH6/ensemble_aware/ensemble_sweeps",
+    "coord_frames": {
+      "usalign_first_chain": {
+        "coord_cache_dir": "metric_analysis/structure_metrics/MSH6/ensemble_aware/cache_usalign",
+        "sweep_dir": "metric_analysis/structure_metrics/MSH6/ensemble_aware_usalign/ensemble_sweeps"
+      },
+      "usalign_scored_chain": {
+        "coord_cache_dir": "metric_analysis/structure_metrics/MSH6/ensemble_aware/cache_usalign_scored_chain",
+        "sweep_dir": "metric_analysis/structure_metrics/MSH6/ensemble_aware_usalign_scored_chain/ensemble_sweeps"
+      }
+    },
+    "wt_artifact": "MutS_alpha_MSH6_GT_WT_data",
+    "structure_metrics_stages": [
+      "plddt_distribution"
+    ],
+    "_coord_frame": "2026-10-15: coordinate metrics read the WT rigid-core-fit cache (coord_cache_dir, built from the USalign cache by cache_builders/subunit_core_fit.py, no drive): one WT-defined core of confident, distance-stable residues, the same for every variant. USalign as the builders called it superposes on the first chain only. COORD_FRAME=usalign_first_chain switches to the control cache (same structures, old coordinates; experiments/coord_core_fit). DNA caches and the structure index stay in cache_dir."
+  },
+  "PIK3CA": {
+    "enabled": true,
+    "output_prefix": "PIK3CA",
+    "read_root_path": "$DRIFT_ARCHIVE_ROOT/PIK3CA",
+    "source_type": "tar",
+    "artifact_glob": "*.tar.gz",
+    "chain_ids": [
+      "A"
+    ],
+    "cache_dir": "metric_analysis/structure_metrics/PIK3CA/ensemble_aware/cache",
+    "coord_cache_dir": "metric_analysis/structure_metrics/PIK3CA/ensemble_aware/cache_corefit",
+    "coord_frames": {
+      "usalign_first_chain": {
+        "coord_cache_dir": "metric_analysis/structure_metrics/PIK3CA/ensemble_aware/cache_usalign",
+        "sweep_dir": "metric_analysis/structure_metrics/PIK3CA/ensemble_aware_usalign/ensemble_sweeps"
+      }
+    },
+    "_coord_frame": "2026-10-15: coordinate metrics read the WT rigid-core-fit cache (coord_cache_dir, built from the USalign cache by cache_builders/subunit_core_fit.py, no drive): one WT-defined core of confident, distance-stable residues, the same for every variant. USalign as the builders called it superposes on the first chain only. COORD_FRAME=usalign_first_chain switches to the control cache (same structures, old coordinates; experiments/coord_core_fit). DNA caches and the structure index stay in cache_dir.",
+    "sweep_dir": "metric_analysis/structure_metrics/PIK3CA/ensemble_aware/ensemble_sweeps",
+    "archive_root": "$DRIFT_ARCHIVE_ROOT/PIK3CA",
+    "protein_chains": [
+      "A"
+    ],
+    "wt_hint": "PIK3CA_WT",
+    "ensemble_sizes": [
+      1,
+      5,
+      10,
+      20,
+      40,
+      60,
+      90
+    ],
+    "ensemble_repeats_by_size": {
+      "1": 50,
+      "5": 50,
+      "10": 40,
+      "20": 30,
+      "40": 20,
+      "60": 15,
+      "90": 10
+    },
+    "label_mode": "clinvar",
+    "clinvar_gene": "PIK3CA",
+    "clinvar_csv": "Ground_Truths/ClinVar/clinvar_result_pik3ca.tsv",
+    "plddt_profile_driver": "H1047R",
+    "plddt_profile_passenger": "I391M",
+    "plddt_residue_start": 1,
+    "plddt_outlier_threshold": 0.01,
+    "partner_chains": [
+      "B"
+    ],
+    "_status": "Archive and pLDDT validation passed for 91 variants plus WT; enabled for descriptor preprocessing. Coordinate caches and canonical-cohort integration remain pending.",
+    "_chains": "Chain A is PIK3CA, 1068 residues; chain B is the PIK3R1 322-600 fragment, 279 residues. Confidence descriptors use chain A only; B is the interface partner.",
+    "_labels": "Transcript-matched ClinVar germline pathogenic/benign annotations; these are not somatic driver/passenger ground truth. 84 positive and 7 negative modelled variants.",
+    "wt_artifact": "PIK3CA_WT_vartmpl_data",
+    "_wt_artifact": "Pinned 2026-10-15: the WT regenerated with the variants' templates (af3_jobs.wt_from_variant from K532R). The old WT (PIK3CA_WT_data) stays in the cache; its pLDDT CSV is in PLDDTs/_wt_legacy_2026-10-15."
+  },
+  "MutS_alpha_MSH6_GT": {
+    "enabled": true,
+    "_status": "ENABLED 2026-10-12. The MSH6 G:T-mismatch rerun as its own parent complex, so MSH6 is measured against a WT folded on the same duplex; it replaces MutS_alpha as MSH6's cohort_parent. Archives validated 148/148 and pLDDTs extracted 2026-10-12 (experiments/elements_drive_audit/, experiments/msh6_gt_early/). The rmsf/dna coordinate caches are NOT built yet, so the rmsf, dna and ensemble_aware stages will fail until they are. MSH2 stays on MutS_alpha and its 21/20 insertion-loop WT.",
+    "_construct": "af3_jobs/configs/MutS_alpha_MSH6_GT.json: MSH2 chain A (934 aa, unmutated), MSH6 chain B (1360 aa, mutated), a 21/21-nt duplex with one central G:T mismatch (chains C, D), 2x ATP/Mg, 25 seeds x 5 samples. 147 MSH6 ClinVar missense + WT = 148 archives.",
+    "_labels": "Every MSH6 missense in the 2026-09-25 ClinVar export: 66 Driver / 77 Passenger; the four start-codon variants (M1I/L/T/V) carry no label, as in PTEN.",
+    "output_prefix": "MutS_alpha_MSH6_GT",
+    "read_root_path": "$DRIFT_ARCHIVE_ROOT/MSH6_GT",
+    "source_type": "tar",
+    "artifact_glob": "*.tar.gz",
+    "chain_ids": [
+      "A",
+      "B"
+    ],
+    "cache_dir": "metric_analysis/structure_metrics/MutS_alpha_MSH6_GT/ensemble_aware/cache",
+    "sweep_dir": "metric_analysis/structure_metrics/MutS_alpha_MSH6_GT/ensemble_aware/ensemble_sweeps",
+    "archive_root": "$DRIFT_ARCHIVE_ROOT/MSH6_GT",
+    "protein_chains": [
+      "A",
+      "B"
+    ],
+    "dna_chains": [
+      "C",
+      "D"
+    ],
+    "wt_hint": "MutS_alpha_MSH6_GT_WT_data",
+    "wt_artifact": "MutS_alpha_MSH6_GT_WT_data",
+    "_wt_artifact": "Pinned 2026-10-14: the seeds 26-75 WT extension archives (MutS_alpha_MSH6_GT_WT_seeds_*_data) also match WT.",
+    "ensemble_sizes": [
+      1,
+      5,
+      10,
+      20,
+      40,
+      60,
+      90
+    ],
+    "ensemble_repeats_by_size": {
+      "1": 50,
+      "5": 50,
+      "10": 40,
+      "20": 30,
+      "40": 20,
+      "60": 15,
+      "90": 10
+    },
+    "label_mode": "clinvar_by_gene",
+    "clinvar_csv_by_gene": {
+      "MSH6": "Ground_Truths/ClinVar/clinvar_result_msh6.csv"
+    },
+    "plddt_profile_driver": "E1193K",
+    "plddt_profile_passenger": "E122K",
+    "plddt_residue_segments": [
+      {
+        "chain_id": "A",
+        "display_name": "MSH2",
+        "residue_start": 1,
+        "length": 934
+      },
+      {
+        "chain_id": "B",
+        "display_name": "MSH6",
+        "residue_start": 1,
+        "length": 1360
+      }
+    ],
+    "plddt_profile_driver_chains": [
+      "B"
+    ],
+    "plddt_profile_passenger_chains": [
+      "B"
+    ],
+    "plddt_outlier_threshold": 0.01
+  }
+}

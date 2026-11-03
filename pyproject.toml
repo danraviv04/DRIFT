@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "drift"
+version = "0.1.0"
+description = "DRIFT: Driver Recognition from Induced Fluctuations in Tertiary structure."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+# Runtime dependencies are not declared here; create the environment from environment.yml.
+
+[project.scripts]
+run-structure-metrics   = "metric_analysis.pipeline.orchestration.run_structure_metrics:main"
+af3-jobs                = "af3_jobs.cli:main"
+
+# Explicit package list: the metric_analysis/ directory also holds multi-GB output
+# trees (structure_metrics/, results/) and non-package folders (conservation/,
+# notebooks/, tests/) that must not be swept in by auto-discovery.
+[tool.setuptools]
+packages = [
+    "drift",
+    "af3_jobs",
+    "metric_analysis",
+    "metric_analysis.pipeline",
+    "metric_analysis.pipeline.config",
+    "metric_analysis.pipeline.library",
+    "metric_analysis.pipeline.orchestration",
+    "metric_analysis.pipeline.cache_builders",
+]
+
+# protein_configs.json lives at the metric_analysis/ package root and is read at runtime.
+[tool.setuptools.package-data]
+"drift" = ["protein_configs.json"]
+"metric_analysis" = ["protein_configs.json"]
+# Complex definitions and the cached UniProt sequences they resolve to.
+"af3_jobs" = ["configs/*.json", "seq_cache/*.fasta"]
