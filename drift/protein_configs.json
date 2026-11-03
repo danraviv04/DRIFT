@@ -1,7 +1,7 @@
 {
   "TP53": {
     "enabled": false,
-    "_status": "No binary label since 2026-10-13: the assay is a continuous target only (experiments/continuous_functional), never thresholded into driver/passenger. Disabled for the binary pipeline; load_continuous_configs() reads its d1 block.",
+    "_status": "No binary label since 2026-10-13: the assay is a continuous target only (analyses/continuous/continuous_functional), never thresholded into driver/passenger. Disabled for the binary pipeline; load_continuous_configs() reads its d1 block.",
     "d1": {
       "mut": "P53",
       "read_root": "PLDDTs/TP53",
@@ -37,7 +37,7 @@
       "wt_csv_expected_sources": 1,
       "plddt_expected_residues": 204,
       "mut_csv_glob": "*plddt_values.csv",
-      "_mut_csv_replacements_note": "2026-10-20: eight drivers were predicted with AF3 seeds 1-32 (160 predictions); every other POLE ensemble and the WT have seeds 1-25 (125). These 25-seed copies (seeds 1-25, the WT's seed numbers) replace them, so every POLE ensemble is 25 seeds x 5 samples. The 160-prediction originals stay in PLDDTs/POLE/. experiments/annotation_stages.",
+      "_mut_csv_replacements_note": "2026-10-20: eight drivers were predicted with AF3 seeds 1-32 (160 predictions); every other POLE ensemble and the WT have seeds 1-25 (125). These 25-seed copies (seeds 1-25, the WT's seed numbers) replace them, so every POLE ensemble is 25 seeds x 5 samples. The 160-prediction originals stay in PLDDTs/POLE/. analyses/annotation/stages.",
       "mut_csv_replacements": {
         "POLE_268-471_D275A_plddt_values.csv": "PLDDTs/POLE_25seed/POLE_268-471_D275A_plddt_values.csv",
         "POLE_268-471_D275G_plddt_values.csv": "PLDDTs/POLE_25seed/POLE_268-471_D275G_plddt_values.csv",
@@ -93,7 +93,7 @@
   },
   "KRAS": {
     "enabled": false,
-    "_status": "No binary label since 2026-10-13: the assay is a continuous target only (experiments/continuous_functional), never thresholded into driver/passenger. Disabled for the binary pipeline; load_continuous_configs() reads its d1 block.",
+    "_status": "No binary label since 2026-10-13: the assay is a continuous target only (analyses/continuous/continuous_functional), never thresholded into driver/passenger. Disabled for the binary pipeline; load_continuous_configs() reads its d1 block.",
     "isoform": "KRAS4B (UniProt P01116-2, ENST00000311936, 188 aa)",
     "_isoform_note": "Switched from KRAS4A to KRAS4B on 2026-10-13: structures (PLDDTs/KRAS, 979 mutants + WT), AlphaMissense (afm_KRAS_predictions.tsv) and the DMS screen are all 4B. The 4A data live in PLDDTs/KRAS4A_legacy and Ground_Truths/AlphaMissense/legacy_4A. This non-underscore field also changes the cache fingerprint so no 4A-era cache is reused.",
     "d1": {

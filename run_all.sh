@@ -47,7 +47,7 @@ export PYTHONPATH="$W"
 export DRIFT_DEVICE=cpu PYTHONUNBUFFERED=1
 export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
 # Output folders of the v6_ca run (per-protein stages, continuous route, coordinates) carry
-# this tag; the 25-seed runner (experiments/annotation_stages/run_stage.py) sets its own.
+# this tag; the 25-seed runner (analyses/annotation/stages/run_stage.py) sets its own.
 export DRIFT_RUN_TAG=v6_ca
 FINGERPRINT=97f1cdbfda8e      # drift/protein_configs.json: the paper's config minus FOXA1 (was 49028c16cbb3)
 LOGS="$W/logs"
@@ -57,7 +57,7 @@ BINARY="POLE,PTEN,VHL,MSH2,MSH6,PIK3CA"
 # the cohort).
 COORD="POLE,PTEN,VHL,PIK3CA,MSH2,MSH6"
 SEEDS="42 43 44 45 46 47 48 49 50 51"
-RS="experiments/annotation_stages/run_stage.py"
+RS="analyses/annotation/stages/run_stage.py"
 
 say () {
   if [ "${DRY_RUN:-0}" = 1 ]; then echo "$*"; else echo "$(date '+%m-%d %H:%M:%S') $*" | tee -a "$STATUS"; fi
@@ -65,7 +65,7 @@ say () {
 
 stage () {          # stage <name> <command...>: run it, log it, return its status
   local name="$1"; shift
-  if [ "${DRY_RUN:-0}" = 1 ]; then echo "[$name] $*"; return 0; fi
+  if [ "${DRY_RUN:-0}" = 1 ]; then echo "[$name] $(printf '%q ' "$@")"; return 0; fi
   say "START $name"
   local t0=$SECONDS rc=0
   "$@" > "$LOGS/$name.log" 2>&1 || rc=$?
@@ -111,7 +111,7 @@ COORD_SETS="POLE PTEN VHL PIK3CA MutS_alpha MutS_alpha_MSH6_GT"
 X1_plddt () {         # per-structure pLDDT matrices -> PLDDTs/<dataset>/
   stage X1_plddt $PY -m metric_analysis.pipeline.orchestration.run_structure_metrics \
         --protein "$PLDDT_SETS" --stage plddt --force \
-  && stage X1b_pole_inputs $PY experiments/annotation_stages/make_inputs.py   # POLE's eight 32-seed drivers cut to seeds 1-25
+  && stage X1b_pole_inputs $PY analyses/annotation/stages/make_inputs.py   # POLE's eight 32-seed drivers cut to seeds 1-25
 }
 X2_coordinates () {   # US-align Calpha coordinate caches (resumes; for a clean rebuild delete the
   local d c          # dataset's cache parquet, structure index, errors CSV and WT reference first)
@@ -125,16 +125,16 @@ X2_coordinates () {   # US-align Calpha coordinate caches (resumes; for a clean 
   done
 }
 X3_msh6_wt_pool () {  # the 375-prediction MSH6 WT pool (Fig. 1e,f, Note S2)
-  stage X3_msh6_wt_pool $PY experiments/msh6_case_study/ingest_wt_ext.py
+  stage X3_msh6_wt_pool $PY analyses/msh6_case_study/wt_pool/ingest_wt_ext.py
 }
 X4_af3_ranking () {   # AF3 ranking_score per prediction (Note S3, Table S3); ~3 h
-  stage X4_af3_ranking $PY experiments/seed_structure/extract_af3_ranking.py
+  stage X4_af3_ranking $PY analyses/seeds/seed_structure/extract_af3_ranking.py
 }
 X5_kras4b_ks () {     # KRAS4B pLDDT and KS from the audited batch (Note S4)
-  stage X5_kras4b_ks $PY experiments/kras4b_coverage/build_ks.py
+  stage X5_kras4b_ks $PY analyses/continuous/kras4b_coverage/build_ks.py
 }
 X6_seed_maps () {     # AF3 seed of every WT structure, recovered from the archives (Fig. S6, Table S6)
-  stage X6_seed_maps $PY experiments/seed_structure/rerun_all_genes.py
+  stage X6_seed_maps $PY analyses/seeds/seed_structure/rerun_all_genes.py
 }
 extract () {
   need_archives
@@ -154,12 +154,12 @@ A1_structure_metrics () {   # the per-variant cohort summaries; MutS_alpha and M
   # are the modelled complexes the manifest builder reads (MSH2 and MSH6 are their subunits)
   stage A1_structure_metrics $PY -m metric_analysis.pipeline.orchestration.run_structure_metrics \
         --protein "$BINARY,MutS_alpha,MutS_alpha_MSH6_GT" --stage plddt_distribution --force \
-  && stage A2_pole_summary_rows $PY experiments/annotation_stages/update_canonical_summary.py
+  && stage A2_pole_summary_rows $PY analyses/annotation/stages/update_canonical_summary.py
 }
-L1_manifest () { stage L1_manifest $PY experiments/build_strict_canonical_manifest.py; }
+L1_manifest () { stage L1_manifest $PY analyses/cohort/build_strict_canonical_manifest.py; }
 
 # ---------------------------------------------------------------------------- descriptors
-C1_ks_meanfree () { stage C1_ks_meanfree $PY experiments/ks_meanfree/canonical_analysis.py --force; }
+C1_ks_meanfree () { stage C1_ks_meanfree $PY analyses/msh6_case_study/ks_meanfree/canonical_analysis.py --force; }
 b1_seed () {   # one score-cache shard: every size for one subsampling seed. The caches go to
   # drift/cache (reused when present); the shard folder holds only the sweep's own model-fit
   # tables, which nothing reads, and starts empty (the sweep refuses one holding a checkpoint).
@@ -180,7 +180,9 @@ K_coordinates () {
   stage K1_core_fit_caches $PY -m metric_analysis.pipeline.cache_builders.subunit_core_fit --dataset "$COORD" \
   && stage K2_usalign_frame_caches $PY -m metric_analysis.pipeline.cache_builders.subunit_core_fit \
         --dataset "$COORD" --frame usalign \
-  && stage K3_validate_caches $PY experiments/coord_core_fit/validate.py --dataset "$COORD"
+  && stage K3_validate_caches $PY analyses/coordinates/coord_core_fit/validate.py --dataset "$COORD" \
+  && stage K4_coordinate_sweeps $PY -m metric_analysis.pipeline.orchestration.run_structure_metrics \
+        --protein "$COORD" --stage ensemble_aware --force
 }
 descriptors () {
   say "=== descriptors"
@@ -196,15 +198,15 @@ E_annotation () {
   && rs s8_n90 && rs s1_matched && rs fig1cd && rs s1a
 }
 E_continuous () {
-  stage G1_continuous $PY experiments/continuous_functional/run_continuous.py --force \
-  && stage G6_four_gene_ks $PY experiments/continuous_functional/plot_four_gene_ks.py
+  stage G1_continuous $PY analyses/continuous/continuous_functional/run_continuous.py --force \
+  && stage G6_four_gene_ks $PY analyses/continuous/continuous_functional/plot_four_gene_ks.py
 }
-POOL=experiments/msh6_case_study/wt_75seeds/MutS_alpha_MSH6_GT_WT_75seeds_plddt_values.csv
-PTEN_POOL="PLDDTs/PTEN/PTEN_WT_plddt_values.csv experiments/pten_wt_null_panel/plddt/PTEN_WT_seeds26-200_plddt_values.csv"
+POOL=analyses/msh6_case_study/wt_pool/wt_75seeds/MutS_alpha_MSH6_GT_WT_75seeds_plddt_values.csv
+PTEN_POOL="PLDDTs/PTEN/PTEN_WT_plddt_values.csv analyses/msh6_case_study/wt_backgrounds_200/plddt/PTEN_WT_seeds26-200_plddt_values.csv"
 wt_null () {          # wt_null <name> <args...>: one 200-split WT-vs-WT background
   local name="$1"; shift
-  stage "N1_$name" $PY experiments/pten_wt_null_panel/pten_wt_null_panel.py "$@" \
-        --out "experiments/pten_wt_null_panel/results_$name"
+  stage "N1_$name" $PY analyses/msh6_case_study/wt_backgrounds_200/pten_wt_null_panel.py "$@" \
+        --out "analyses/msh6_case_study/wt_backgrounds_200/results_$name"
 }
 E_backgrounds () {    # Fig. 1f and its 48/66, 8/77: 200-split backgrounds, replayed and extended to 2,000
   wt_null MSH6_v6ca_wt375_n100_seedsplit --gene MSH6 --wt-csv $POOL --n 100 --split seed --panel \
@@ -215,31 +217,31 @@ E_backgrounds () {    # Fig. 1f and its 48/66, 8/77: 200-split backgrounds, repl
   && wt_null wt1000_n50_seedsplit --wt-csv $PTEN_POOL --n 50 --split seed \
   && wt_null wt1000_n100 --wt-csv $PTEN_POOL --n 100 \
   && wt_null wt1000_n50 --wt-csv $PTEN_POOL --n 50 \
-  && stage N2_wt_background_2000 $PY experiments/wt_background_2000/run_wt_background_2000.py
+  && stage N2_wt_background_2000 $PY analyses/msh6_case_study/wt_background_2000/run_wt_background_2000.py
 }
 E_residue_null () {   # Fig. 1e text (20.13%, 0.78%), Note S2 (17.6%), Fig. S3b-e
-  stage N3_residue_null $PY experiments/residue_null/residue_null.py --gene MSH6 --mutants E221D R772L \
+  stage N3_residue_null $PY analyses/msh6_case_study/residue_null/residue_null.py --gene MSH6 --mutants E221D R772L \
         --window 764 779 --wt-pool $POOL --splits 2000 --modes matched \
-  && stage N4_residue_null_2000 $PY experiments/wt_background_2000/residue_null_2000.py \
-  && stage N5_near_pair $PY experiments/fig1e_near_pair/residue_null_near_pair.py \
-  && stage N6_gene_wide $PY experiments/fig1e_near_pair/gene_wide.py
+  && stage N4_residue_null_2000 $PY analyses/msh6_case_study/wt_background_2000/residue_null_2000.py \
+  && stage N5_near_pair $PY analyses/msh6_case_study/fig1e_near_pair/residue_null_near_pair.py \
+  && stage N6_gene_wide $PY analyses/msh6_case_study/fig1e_near_pair/gene_wide.py
 }
 E_seeds () {          # Note S3 + Table S3 (AF3 top-1); Fig. S6 + Note S7 (seed allocation); Table S6
-  stage N7_af3_top1_vs_ks $PY experiments/af3_top1_vs_ks/af3_top1_vs_ks.py \
-  && stage N8_plateau_run $PY experiments/seed_structure/plateau_run.py --workers 3 \
-  && stage N9_plateau_summary $PY experiments/seed_structure/plateau_summary.py \
-  && stage N10_three_arm_n25 $PY experiments/seed_structure/three_arm_n25.py \
-  && stage N11_seed_icc $PY experiments/seed_structure/seed_icc.py \
-  && stage N12_seed_pairing $PY experiments/wt_variant_offset/seed_pairing.py \
-  && stage N13_seed_coupling_ks $PY experiments/seed_coupling_ks/seed_coupling_ks.py
+  stage N7_af3_top1_vs_ks $PY analyses/seeds/af3_top1_vs_ks/af3_top1_vs_ks.py \
+  && stage N8_plateau_run $PY analyses/seeds/seed_structure/plateau_run.py --workers 3 \
+  && stage N9_plateau_summary $PY analyses/seeds/seed_structure/plateau_summary.py \
+  && stage N10_three_arm_n25 $PY analyses/seeds/seed_structure/three_arm_n25.py \
+  && stage N11_seed_icc $PY analyses/seeds/seed_structure/seed_icc.py \
+  && stage N12_seed_pairing $PY analyses/seeds/seed_pairing/seed_pairing.py \
+  && stage N13_seed_coupling_ks $PY analyses/seeds/seed_coupling_ks/seed_coupling_ks.py
 }
 E_checks () {         # Note S1 frame sensitivity; Notes S4-S6 and Table S4b checks
-  stage N14_usalign_scored_chain $PY experiments/coord_core_fit/usalign_scored_chain.py \
-  && stage N15_frame_sensitivity $PY experiments/s1_frame_sensitivity/frame_sensitivity.py \
-  && stage N16_kras_by_assay_bin $PY experiments/kras_score_by_assay_bin/kras_score_by_assay_bin.py \
-  && stage N17_tp53_snv_reachability $PY experiments/tp53_snv_reachability/tp53_snv_reachability.py \
-  && stage N18_af3_version_check $PY experiments/tp53_af3_version_check/version_check.py \
-        --out experiments/tp53_af3_version_check/results_v6
+  stage N14_usalign_scored_chain $PY analyses/coordinates/coord_core_fit/usalign_scored_chain.py --steps align \
+  && stage N15_frame_sensitivity $PY analyses/coordinates/s1_frame_sensitivity/frame_sensitivity.py \
+  && stage N16_kras_by_assay_bin $PY analyses/continuous/kras_score_by_assay_bin/kras_score_by_assay_bin.py \
+  && stage N17_tp53_snv_reachability $PY analyses/continuous/tp53_snv_reachability/tp53_snv_reachability.py \
+  && stage N18_af3_version_check $PY analyses/seeds/tp53_af3_version_check/version_check.py \
+        --out analyses/seeds/tp53_af3_version_check/results_v6
 }
 E_standalone () { E_backgrounds && E_residue_null && E_seeds && E_checks; }
 evaluation () {
@@ -248,14 +250,14 @@ evaluation () {
 }
 
 # ---------------------------------------------------------------------------- figures
-F1P=experiments/figure1_layout/panels   # Figure 1 panels are drawn here, then collected
+F1P=figures/figure1/layout/panels   # Figure 1 panels are drawn here, then collected
 F_figure2 () {
   rs si_coordinate_vs_plddt && rs si_ks_vs_am && rs figure2 \
-  && stage F2_collect cp experiments/annotation_stages/publication/figure2/Figure2.pdf figures/Figure2.pdf
+  && stage F2_collect cp analyses/annotation/stages/publication/figure2/Figure2.pdf figures/Figure2.pdf
 }
 F_fig1b () {   # Fig. 1b: needs the AF3 CIFs (DRIFT_ARCHIVE_ROOT) and ChimeraX; not in `figures`
   need_archives
-  local B=experiments/fig1b_corefit_models
+  local B=figures/figure1/fig1b
   stage F1b_export_models $PY $B/export_models.py \
   && stage F1b_rmsf_bfactor $PY $B/rmsf_bfactor.py \
   && stage F1b_render $PY $B/render_panel_b.py --style tubes_rmsf \
@@ -276,26 +278,26 @@ collect_figure1 () {   # the assembler reads figures/panels/<stem>_big.pdf, the 
     || cp "$F1P/fig1b_tubes_rmsf_stacked_keybelow.pdf" figures/panels/
 }
 F_figure1 () {
-  stage F1a_ga_boxplot $PY experiments/ga_ks_boxplot/make_ga_ks_boxplot.py \
-  && stage F1cd_panels $PY experiments/rmsf_histogram/exemplar_wt_vs_mut.py --mutant P286R --metric rmsf \
+  stage F1a_ga_boxplot $PY figures/figure1/ga_boxplot/make_ga_ks_boxplot.py \
+  && stage F1cd_panels $PY analyses/coordinates/rmsf_histogram/exemplar_wt_vs_mut.py --mutant P286R --metric rmsf \
         --panels bc --panel-width-in 4.4 --bc-heights 1.8,1.8 --shift-xaxis --stem-suffix _row_rmsf_big \
         --shift-note rmsd --wt-colour "#5a5a5a" --wt-on-top --out-dir "$F1P" \
-  && stage F1efgh_panels $PY experiments/figure1_layout/rerender_efgh.py \
+  && stage F1efgh_panels $PY figures/figure1/layout/rerender_efgh.py \
   && stage F1_collect collect_figure1 \
   && stage F1_assemble $PY figures/make_figures.py Figure1
 }
 collect_si () {        # each SI figure under the paper's file name
-  cp experiments/si_coordinate_figures/results/FigureS_coordinate_descriptors.pdf \
-     experiments/si_coordinate_figures/results/FigureS_rigid_core.pdf \
-     experiments/si_note_s2_figures/results/FigureS_per_residue_test.pdf \
-     experiments/si_note_s2_figures/results/FigureS_wt_backgrounds.pdf \
-     experiments/si_ks_vs_am_figure/results/FigureS_ks_vs_alphamissense.pdf figures/ \
-  && cp experiments/seed_structure/three_arm_n25/three_arm_n25_plddt.pdf figures/FigureS_seed_spread.pdf
+  cp figures/si/S1_S2/results/FigureS_coordinate_descriptors.pdf \
+     figures/si/S1_S2/results/FigureS_rigid_core.pdf \
+     figures/si/S3_S4/results/FigureS_per_residue_test.pdf \
+     figures/si/S3_S4/results/FigureS_wt_backgrounds.pdf \
+     figures/si/S5/results/FigureS_ks_vs_alphamissense.pdf figures/ \
+  && cp analyses/seeds/seed_structure/three_arm_n25/three_arm_n25_plddt.pdf figures/FigureS_seed_spread.pdf
 }
 gather_si_inputs () {  # the SI rebuilds read inputs/, copies of the runs' outputs
-  local S=experiments/annotation_stages/side P=experiments/annotation_stages/publication/si_figures
-  local I1=experiments/si_coordinate_figures/inputs I2=experiments/si_note_s2_figures/inputs
-  local I3=experiments/si_ks_vs_am_figure/inputs G=experiments/fig1e_near_pair/results/gene_wide
+  local S=analyses/annotation/stages/side P=analyses/annotation/stages/publication/si_figures
+  local I1=figures/si/S1_S2/inputs I2=figures/si/S3_S4/inputs
+  local I3=figures/si/S5/inputs G=analyses/msh6_case_study/fig1e_near_pair/results/gene_wide
   mkdir -p $I1 $I2 $I3
   cp $S/s1_matched_draws/auc_matched_draws.csv $I1/auc_matched_draws_25seed.csv \
   && cp $S/s1_matched_draws/variant_seed_scores.csv.gz $I1/variant_seed_scores_25seed.csv.gz \
@@ -310,9 +312,9 @@ gather_si_inputs () {  # the SI rebuilds read inputs/, copies of the runs' outpu
 }
 F_si () {
   stage FS_inputs gather_si_inputs \
-  && stage FS1_S2_coordinates $PY experiments/si_coordinate_figures/rebuild.py \
-  && stage FS3_S4_note_s2 $PY experiments/si_note_s2_figures/rebuild.py \
-  && stage FS5_ks_vs_am $PY experiments/si_ks_vs_am_figure/rebuild.py \
+  && stage FS1_S2_coordinates $PY figures/si/S1_S2/rebuild.py \
+  && stage FS3_S4_note_s2 $PY figures/si/S3_S4/rebuild.py \
+  && stage FS5_ks_vs_am $PY figures/si/S5/rebuild.py \
   && stage FS_collect collect_si
 }
 figures () {
@@ -326,7 +328,7 @@ list () {
   sed -n '/^# Phases/,/^# Settings/p' "$0" | sed '$d'
   echo "Stages (bash run_all.sh <name>):"
   grep -oE '^[A-Z][A-Za-z0-9_]* \(\)' "$0" | sed 's/ ()//; s/^/  /'
-  echo "  S_<stage>   one stage of experiments/annotation_stages/run_stage.py (e.g. S_curves)"
+  echo "  S_<stage>   one stage of analyses/annotation/stages/run_stage.py (e.g. S_curves)"
 }
 
 [ $# -gt 0 ] && [ "$*" != list ] || { list; exit 0; }

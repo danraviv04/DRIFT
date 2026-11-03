@@ -3,7 +3,7 @@
 Every ensemble in the paper is 25 AF3 seeds x 5 samples = 125 predictions. Eight
 POLE drivers (D275A, D275G, E277G, P286H, P286L, P286R, P286S, T278K) were predicted
 with seeds 1-32; their pLDDT inputs are 25-seed copies (PLDDTs/POLE_25seed/, see
-experiments/annotation_stages), but the coordinate caches hold all 160 structures. A
+analyses/annotation/stages), but the coordinate caches hold all 160 structures. A
 coordinate reader that takes POLE structures must drop seeds above the cap, so
 the coordinates describe the same 125 predictions as the pLDDT matrices.
 """

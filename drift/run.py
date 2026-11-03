@@ -109,7 +109,7 @@ FEATURE_VARIANTS = {
 # their assays) is gone: thresholding a continuous assay into driver/passenger
 # was abandoned, so TP53 and KRAS have no binary label and are disabled in
 # protein_configs.json. Functional analyses are continuous only, in
-# experiments/continuous_functional (TP53, KRAS, PTEN, MSH2 assay scores).
+# analyses/continuous/continuous_functional (TP53, KRAS, PTEN, MSH2 assay scores).
 # The mixed "evaluation" group went with it.
 #
 # FOXA1, the positional control (label mode hotspot_range: a residue interval,
@@ -122,7 +122,7 @@ GT_GROUPS = {
 }
 RETIRED_GT_GROUPS = {
     "functional": "binary functional labels were removed on 2026-10-13; use "
-                  "experiments/continuous_functional for the assay targets",
+                  "analyses/continuous/continuous_functional for the assay targets",
     "evaluation": "the mixed annotation+functional group was removed on 2026-10-13",
 }
 

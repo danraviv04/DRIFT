@@ -1,7 +1,7 @@
 {
   "name": "KRAS4B",
   "job_prefix": "KRAS",
-  "description": "KRAS isoform 4B with GDP and Mg, generated from scratch (2026-10-10) so the structures match the isoform of both the HA1E GOF DMS screen and the AlphaMissense scores (afm_KRAS4B_predictions.tsv). Variants = (1) a draw blind to both the assay and AM: 5 random substitutions at each of the 187 assayed positions (experiments/kras4b_coverage/make_batch.py, seed per position), plus (2) the 60 hotspot variants of the previous batch (the former 4A cohort + G151M, H166W, K178M, M188I), forced in via 'include'. Only stratum (1) is a sample of the screen; experiments/kras4b_coverage/results/batch_strata.csv says which is which. Job names stay KRAS_* because the DRIFT runtime's bare [A-Z]\\d+[A-Z] parser would read a KRAS4B_ prefix as the variant S4B; the archive name and the 188-aa sequence distinguish this batch from the 4A one, so keep its outputs in a separate directory.",
+  "description": "KRAS isoform 4B with GDP and Mg, generated from scratch (2026-10-10) so the structures match the isoform of both the HA1E GOF DMS screen and the AlphaMissense scores (afm_KRAS4B_predictions.tsv). Variants = (1) a draw blind to both the assay and AM: 5 random substitutions at each of the 187 assayed positions (analyses/continuous/kras4b_coverage/make_batch.py, seed per position), plus (2) the 60 hotspot variants of the previous batch (the former 4A cohort + G151M, H166W, K178M, M188I), forced in via 'include'. Only stratum (1) is a sample of the screen; analyses/continuous/kras4b_coverage/results/batch_strata.csv says which is which. Job names stay KRAS_* because the DRIFT runtime's bare [A-Z]\\d+[A-Z] parser would read a KRAS4B_ prefix as the variant S4B; the archive name and the 188-aa sequence distinguish this batch from the 4A one, so keep its outputs in a separate directory.",
   "model_seeds": 25,
   "dialect": "alphafold3",
   "version": 4,
@@ -31,7 +31,7 @@
   ],
   "mutations": {
     "source": "file",
-    "path": "experiments/kras4b_coverage/batch/kras4b_blind_k5.txt",
+    "path": "analyses/continuous/kras4b_coverage/batch/kras4b_blind_k5.txt",
     "gene": "KRAS",
     "include": [
       "K5E",

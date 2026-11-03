@@ -21,7 +21,7 @@ class TestStructureStageScope(unittest.TestCase):
             cfg = runner.get_protein_config(gene, runner.BASE_REQUIRED_KEYS)
             selected, unsupported = runner.partition_stages(cfg, runner.ALL_STAGES)
             self.assertEqual(unsupported, ['plddt'])
-            self.assertEqual(selected, ['plddt_distribution'])
+            self.assertEqual(selected, ['plddt_distribution', 'ensemble_aware'])
 
     def test_other_datasets_keep_all_stages(self):
         for gene in runner.supported_proteins(runner.BASE_REQUIRED_KEYS):
@@ -48,7 +48,7 @@ class TestStructureStageScope(unittest.TestCase):
             self.assertEqual(self.cli('--protein', 'MSH2,MSH6', '--stage', 'all'), 0)
             self.assertEqual(run.call_count, 2)
             for call in run.call_args_list:
-                self.assertEqual(call.args[1], ['plddt_distribution'])
+                self.assertEqual(call.args[1], ['plddt_distribution', 'ensemble_aware'])
 
     def test_all_proteins_extraction_request_skips_subunits(self):
         with patch.object(runner, 'run_protein', return_value={}) as run:

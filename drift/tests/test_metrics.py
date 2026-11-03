@@ -43,7 +43,7 @@ class TestKSMatchesSciPy(unittest.TestCase):
         from metric_analysis.pipeline.library.ensemble_aware_pipeline import compute_plddt_ks_for_selected_columns
         from metric_analysis.pipeline.library.plddt_ks import compute_per_residue_plddt_ks
         from drift.ensemble_shift import _residue_ks_summaries
-        from experiments.ks_meanfree.canonical_analysis import ks_mean_equal
+        from analyses.msh6_case_study.ks_meanfree.canonical_analysis import ks_mean_equal
         a = np.array([[70.], [80.], [90.], [60.]])
         b = np.array([[70.], [81.], [95.], [60.]])
         rate = 0.5
@@ -85,7 +85,7 @@ class TestKSMatchesSciPy(unittest.TestCase):
 class TestUnavailableMetricScoring(unittest.TestCase):
     def test_canonical_scoring_and_uncertainty_keep_unavailable_metrics_missing(self):
         import pandas as pd
-        from experiments.ks_meanfree import canonical_analysis as analysis
+        from analyses.msh6_case_study.ks_meanfree import canonical_analysis as analysis
         rows = []
         for seed in (0, 1):
             for i, label in enumerate((0, 0, 1, 1)):
@@ -104,7 +104,7 @@ class TestUnavailableMetricScoring(unittest.TestCase):
 
     def test_nonlearned_sweep_keeps_only_available_arms(self):
         import pandas as pd
-        from experiments.simple_fusion_benchmark import size_sweep
+        from analyses.annotation.simple_fusion_benchmark import size_sweep
         frame = pd.DataFrame(dict(gene=["A"] * 4, label=[0, 0, 1, 1],
                                   afm_score=[.1, .2, .8, .9], d1_score=[.01, .02, .08, .09],
                                   plddt_ks_residue=np.nan, plddt_ks_centred=np.nan))

@@ -201,7 +201,7 @@ def classify_allele_or_artifact(value, cfg):
       per-gene since MSH2/MSH6 mutation codes use independent numbering.
     - csv_lookup (POLE): precomputed Variant->Label(1/0) csv.
     - continuous_assay (TP53, KRAS): NO binary label. Their assays are continuous
-      targets only (experiments/continuous_functional); the former percentile
+      targets only (analyses/continuous/continuous_functional); the former percentile
       (TP53) and LFC-cutoff (KRAS) rules were deleted on 2026-10-13, so every
       variant is UNK here.
     """

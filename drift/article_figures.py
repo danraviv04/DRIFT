@@ -76,7 +76,7 @@ BENCHMARK_SUMMARY = (
 
 DRV, PAS, AMC, ACC, GRY = "#d1495b", "#2e86ab", "#2e86ab", "#6a4c93", "#8d8d8d"
 # Figure1_resKS row 4 type scale. Panels f and g are drawn by
-# experiments/figure1_ks_combo/make_panels_gh.py under these rcParams and panel
+# figures/figure1/ks_combo/make_panels_gh.py under these rcParams and panel
 # h is drawn here, so h has to carry the same ones or the assembled row mixes
 # two type scales. Copied from that script, not imported: importing it would
 # apply its rcParams to every panel in this module. Keep the two in step.
@@ -828,7 +828,7 @@ def panel_nsweep_metrics(out, gene, stem, key,
 
     ``auc_table`` (2026-10-17): plot precomputed per-seed AUCs instead of computing
     them from CANONICAL_SIZE_SCORES. It takes Figure 2's
-    experiments/figure2/figures/panel_abcd_per_gene_auc.csv (columns N, seed, gene,
+    figures/figure2/figures/panel_abcd_per_gene_auc.csv (columns N, seed, gene,
     descriptor, auc), so Figure 1h and the same gene's line in Figure 2a are the
     same numbers. Only the first entry of ``columns`` is drawn; its N=1 point is the
     table's "KS at N=1" row.

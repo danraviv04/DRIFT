@@ -4,7 +4,7 @@ Every substitution at one residue position forms one cluster; a bootstrap draws 
 clusters. Since 2026-10-20 (Dan) this is the published resampling unit for every
 interval in the paper; the variant-level intervals are kept for the record.
 
-The functions mirror experiments/position_cluster_bootstrap/run.py (the main-text
+The functions mirror analyses/annotation/position_cluster_bootstrap/run.py (the main-text
 estimator): AUC intervals stratify clusters as driver-only / passenger-only / mixed
 and resample within each stratum; correlations and paired differences resample
 clusters without stratification. With singleton clusters (``singleton=True``) every

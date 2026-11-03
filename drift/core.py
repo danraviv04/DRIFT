@@ -121,7 +121,7 @@ def scan_plddt_sources(runtime_configs, max_examples=3):
 
 
 # TP53 and KRAS have no binary label (2026-10-13): their assays are continuous
-# targets only (experiments/continuous_functional), never thresholded. The
+# targets only (analyses/continuous/continuous_functional), never thresholded. The
 # former TP53 cut (Phenotypic_Selection_Model >= 3.25) is deleted.
 
 FOXA1_HOTSPOT_RANGE = (168, 269)

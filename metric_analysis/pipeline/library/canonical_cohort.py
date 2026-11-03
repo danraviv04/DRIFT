@@ -27,7 +27,7 @@ from metric_analysis.pipeline.paths import REPO_ROOT
 # 2026-09-07 split. MSH2 and MSH6 have no distribution summary of their own --
 # they read MutS_alpha's and keep their own rows (see load_canonical_cohort).
 # TP53 and KRAS left on 2026-10-13: they have no binary label any more (their
-# assays are continuous targets, experiments/continuous_functional). FOXA1, a
+# assays are continuous targets, analyses/continuous/continuous_functional). FOXA1, a
 # positional control no paper result uses, left the release on 2026-11-03.
 CANONICAL_PROTEINS = (
     "POLE", "PTEN", "VHL", "MSH2", "MSH6", "PIK3CA",
@@ -181,7 +181,7 @@ def load_canonical_cohort(
     if not STRICT_MANIFEST.is_file():
         raise FileNotFoundError(
             f"strict canonical manifest is missing: {STRICT_MANIFEST}; run "
-            "experiments/build_strict_canonical_manifest.py"
+            "analyses/cohort/build_strict_canonical_manifest.py"
         )
     strict = pd.read_csv(STRICT_MANIFEST)
     required_strict = {"protein", "mutation_code", "mutation_type", "label"}

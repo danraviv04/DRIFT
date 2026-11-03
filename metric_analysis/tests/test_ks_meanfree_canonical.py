@@ -9,7 +9,7 @@ import numpy as np
 
 SCRIPT = (
     Path(__file__).resolve().parents[2]
-    / "experiments" / "ks_meanfree" / "canonical_analysis.py"
+    / "analyses" / "msh6_case_study" / "ks_meanfree" / "canonical_analysis.py"
 )
 SPEC = importlib.util.spec_from_file_location("canonical_ks_analysis", SCRIPT)
 MODULE = importlib.util.module_from_spec(SPEC)

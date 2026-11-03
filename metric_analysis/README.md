@@ -19,6 +19,7 @@ The KS-score itself, the score caches and the evaluation are in `drift/`.
 | `A1_structure_metrics` | `pipeline.orchestration.run_structure_metrics --stage plddt_distribution` | the per-variant cohort summaries, `<dataset>_plddt_distribution_summary.csv`, which the manifest builder reads |
 | `K1_core_fit_caches` | `pipeline.cache_builders.subunit_core_fit` | the coordinate caches re-fitted on each WT's rigid core, `ensemble_aware/cache_corefit/` |
 | `K2_usalign_frame_caches` | `pipeline.cache_builders.subunit_core_fit --frame usalign` | the same structures in the original US-align frame, the comparison control (`cache_usalign/`) |
+| `K4_coordinate_sweeps` | `pipeline.orchestration.run_structure_metrics --stage ensemble_aware` | RMSF, RMSD and positional KS by ensemble size in the core-fit frame, `ensemble_aware/ensemble_sweeps/` (Figs. S1, S2) |
 
 The two extract stages need the raw archives (`DRIFT_ARCHIVE_ROOT`). The rest read the
 processed data only. `pipeline.cache_builders.stream_align` builds the same US-align cache
@@ -34,7 +35,7 @@ metric_analysis/
     paths.py                  the repository root, against which protein_configs.json paths resolve
     labels.py, clinvar.py     driver/passenger labels and ClinVar parsing
     config/protein_config.py  reads protein_configs.json
-    orchestration/            run_structure_metrics (pLDDT extraction, cohort summaries);
+    orchestration/            run_structure_metrics (pLDDT extraction, cohort summaries, coordinate sweeps);
                               run_ensemble_sweep_parallel (coordinate descriptors by ensemble size)
     cache_builders/           repair_rmsf_cache_chunk, stream_align, subunit_core_fit
     library/                  the shared definitions, below

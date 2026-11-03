@@ -10,10 +10,11 @@ Stages, in dependency order:
   plddt               extract per-residue pLDDT matrices from the raw structures
   plddt_distribution  per-variant pLDDT distribution summaries (the canonical cohort's
                       source paths and counts) plus the residue-effect sweeps
+  ensemble_aware      coordinate descriptors (RMSF, RMSD, positional KS) by ensemble size,
+                      from the coordinate cache (the WT rigid-core frame by default)
 
-The DRIFT release keeps only these two. The notebooks' other stages (D1 and pLDDT-ratio
-profiles, profile KS, LDA discrimination, RMSF/DNA batches, the coordinate N-size
-sweep) fed no result of the paper and were removed on 2026-11-03.
+The DRIFT release keeps only these three. The notebooks' other stages (D1 and pLDDT-ratio
+profiles, profile KS, LDA discrimination, RMSF/DNA batches) fed no result of the paper.
 
 Usage
 -----
@@ -48,7 +49,7 @@ from metric_analysis.pipeline.labels import classify_allele_or_artifact
 
 from metric_analysis.pipeline.paths import REPO_ROOT as PROJECT_ROOT
 
-ALL_STAGES = ["plddt", "plddt_distribution"]
+ALL_STAGES = ["plddt", "plddt_distribution", "ensemble_aware"]
 
 BASE_REQUIRED_KEYS = ["output_prefix", "read_root_path", "source_type", "chain_ids", "protein_chains"]
 
@@ -316,9 +317,15 @@ def stage_plddt_distribution(cfg, sm_config, state, force=False):
     }
 
 
+def stage_ensemble_aware(cfg, sm_config, state, force=False):
+    """Coordinate-cache ensemble-size sweeps (RMSF, RMSD, positional KS; DNA where cached)."""
+    eap.run_ensemble_aware_pipeline(cfg["output_prefix"], force=force)
+
+
 STAGE_FUNCS = {
     "plddt": stage_plddt,
     "plddt_distribution": stage_plddt_distribution,
+    "ensemble_aware": stage_ensemble_aware,
 }
 
 

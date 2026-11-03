@@ -82,7 +82,7 @@
         "sweep_dir": "metric_analysis/structure_metrics/POLE/ensemble_aware_usalign/ensemble_sweeps"
       }
     },
-    "_coord_frame": "2026-10-15: coordinate metrics read the WT rigid-core-fit cache (coord_cache_dir, built from the USalign cache by cache_builders/subunit_core_fit.py, no drive): one WT-defined core of confident, distance-stable residues, the same for every variant. USalign as the builders called it superposes on the first chain only. COORD_FRAME=usalign_first_chain switches to the control cache (same structures, old coordinates; experiments/coord_core_fit). DNA caches and the structure index stay in cache_dir.",
+    "_coord_frame": "2026-10-15: coordinate metrics read the WT rigid-core-fit cache (coord_cache_dir, built from the USalign cache by cache_builders/subunit_core_fit.py, no drive): one WT-defined core of confident, distance-stable residues, the same for every variant. USalign as the builders called it superposes on the first chain only. COORD_FRAME=usalign_first_chain switches to the control cache (same structures, old coordinates; analyses/coordinates/coord_core_fit). DNA caches and the structure index stay in cache_dir.",
     "sweep_dir": "metric_analysis/structure_metrics/POLE/ensemble_aware/ensemble_sweeps",
     "archive_root": "$DRIFT_ARCHIVE_ROOT/POLE_folders",
     "wt_hint": "POLE_WT",
@@ -121,7 +121,7 @@
   },
   "TP53": {
     "enabled": false,
-    "_status": "No binary label since 2026-10-13: the assay is a continuous target only (experiments/continuous_functional), never thresholded. Disabled for 'all'; run by name for pLDDT extraction of new batches (the only stage it supports).",
+    "_status": "No binary label since 2026-10-13: the assay is a continuous target only (analyses/continuous/continuous_functional), never thresholded. Disabled for 'all'; run by name for pLDDT extraction of new batches (the only stage it supports).",
     "output_prefix": "TP53",
     "_source": "2026-10-14: primary TP53 cohort = $DRIFT_ARCHIVE_ROOT/TP53, the merged seeds 1-25 archives (125 predictions; output_gen_only seeds 1-20 + TP53_extensions seeds 21-25, merged by af3_jobs/local_runner/merge_seed_extensions.py, spot-checked by experiments/tp53_merge_check). The old 100-prediction source was $DRIFT_ARCHIVE_ROOT/output_gen_only.",
     "read_root_path": "$DRIFT_ARCHIVE_ROOT/TP53",
@@ -197,7 +197,7 @@
   },
   "KRAS": {
     "enabled": false,
-    "_status": "No binary label since 2026-10-13: the assay is a continuous target only (experiments/continuous_functional), never thresholded. Disabled for 'all'; run by name for pLDDT extraction of new batches (the only stage it supports).",
+    "_status": "No binary label since 2026-10-13: the assay is a continuous target only (analyses/continuous/continuous_functional), never thresholded. Disabled for 'all'; run by name for pLDDT extraction of new batches (the only stage it supports).",
     "_isoform": "KRAS4B (P01116-2, 188 aa) since 2026-10-13; the 4A outputs are in structure_metrics/KRAS4A_legacy",
     "output_prefix": "KRAS",
     "read_root_path": "$DRIFT_ARCHIVE_ROOT/KRAS4B_Mutations",
@@ -261,7 +261,7 @@
         "sweep_dir": "metric_analysis/structure_metrics/VHL/ensemble_aware_usalign/ensemble_sweeps"
       }
     },
-    "_coord_frame": "2026-10-15: coordinate metrics read the WT rigid-core-fit cache (coord_cache_dir, built from the USalign cache by cache_builders/subunit_core_fit.py, no drive): one WT-defined core of confident, distance-stable residues, the same for every variant. USalign as the builders called it superposes on the first chain only. COORD_FRAME=usalign_first_chain switches to the control cache (same structures, old coordinates; experiments/coord_core_fit). DNA caches and the structure index stay in cache_dir.",
+    "_coord_frame": "2026-10-15: coordinate metrics read the WT rigid-core-fit cache (coord_cache_dir, built from the USalign cache by cache_builders/subunit_core_fit.py, no drive): one WT-defined core of confident, distance-stable residues, the same for every variant. USalign as the builders called it superposes on the first chain only. COORD_FRAME=usalign_first_chain switches to the control cache (same structures, old coordinates; analyses/coordinates/coord_core_fit). DNA caches and the structure index stay in cache_dir.",
     "sweep_dir": "metric_analysis/structure_metrics/VHL/ensemble_aware/ensemble_sweeps",
     "archive_root": "$DRIFT_ARCHIVE_ROOT/VHL",
     "protein_chains": [
@@ -323,7 +323,7 @@
         "sweep_dir": "metric_analysis/structure_metrics/PTEN/ensemble_aware_usalign/ensemble_sweeps"
       }
     },
-    "_coord_frame": "2026-10-15: coordinate metrics read the WT rigid-core-fit cache (coord_cache_dir, built from the USalign cache by cache_builders/subunit_core_fit.py, no drive): one WT-defined core of confident, distance-stable residues, the same for every variant. USalign as the builders called it superposes on the first chain only. COORD_FRAME=usalign_first_chain switches to the control cache (same structures, old coordinates; experiments/coord_core_fit). DNA caches and the structure index stay in cache_dir.",
+    "_coord_frame": "2026-10-15: coordinate metrics read the WT rigid-core-fit cache (coord_cache_dir, built from the USalign cache by cache_builders/subunit_core_fit.py, no drive): one WT-defined core of confident, distance-stable residues, the same for every variant. USalign as the builders called it superposes on the first chain only. COORD_FRAME=usalign_first_chain switches to the control cache (same structures, old coordinates; analyses/coordinates/coord_core_fit). DNA caches and the structure index stay in cache_dir.",
     "sweep_dir": "metric_analysis/structure_metrics/PTEN/ensemble_aware/ensemble_sweeps",
     "archive_root": "$DRIFT_ARCHIVE_ROOT/PTEN",
     "protein_chains": [
@@ -361,7 +361,7 @@
   "MSH2": {
     "enabled": true,
     "_status": "ENABLED for pLDDT-based endpoints. MSH2 is one subunit of the modelled MutSalpha heterodimer, split out as its own dataset (2026-09-07).",
-    "_scope": "Pre-extracted pLDDT only, enforced by structure_metrics_stages in the runner: raw plddt extraction stays on the parent complex. (Until 2026-11-03 the list also held the notebook stages and ensemble_aware, which the release no longer has.)",
+    "_scope": "Pre-extracted pLDDT and the coordinate sweeps, enforced by structure_metrics_stages in the runner: raw plddt extraction stays on the parent complex.",
     "_cohort_route": "The canonical cohort loader reads MutS_alpha's summary, filters _MSH2_ source filenames, and applies plddt_row_range. The separate MSH2 gallery summary is not the canonical cohort source.",
     "output_prefix": "MSH2",
     "cohort_parent": "MutS_alpha",
@@ -414,14 +414,15 @@
       }
     },
     "structure_metrics_stages": [
-      "plddt_distribution"
+      "plddt_distribution",
+      "ensemble_aware"
     ],
-    "_coord_frame": "2026-10-15: coordinate metrics read the WT rigid-core-fit cache (coord_cache_dir, built from the USalign cache by cache_builders/subunit_core_fit.py, no drive): one WT-defined core of confident, distance-stable residues, the same for every variant. USalign as the builders called it superposes on the first chain only. COORD_FRAME=usalign_first_chain switches to the control cache (same structures, old coordinates; experiments/coord_core_fit). DNA caches and the structure index stay in cache_dir. No wt_artifact here: the pLDDT stages match it against CSV names, and MSH2's WT CSV kept the parent's name (MutS_alpha_WT_plddt_values.csv); the core-fit cache holds exactly one WT, MutS_alpha_MSH2_WT_vartmpl_data."
+    "_coord_frame": "2026-10-15: coordinate metrics read the WT rigid-core-fit cache (coord_cache_dir, built from the USalign cache by cache_builders/subunit_core_fit.py, no drive): one WT-defined core of confident, distance-stable residues, the same for every variant. USalign as the builders called it superposes on the first chain only. COORD_FRAME=usalign_first_chain switches to the control cache (same structures, old coordinates; analyses/coordinates/coord_core_fit). DNA caches and the structure index stay in cache_dir. No wt_artifact here: the pLDDT stages match it against CSV names, and MSH2's WT CSV kept the parent's name (MutS_alpha_WT_plddt_values.csv); the core-fit cache holds exactly one WT, MutS_alpha_MSH2_WT_vartmpl_data."
   },
   "MSH6": {
     "enabled": true,
     "_status": "ENABLED for pLDDT-based endpoints. MSH6 is one subunit of the modelled MutSalpha heterodimer, split out as its own dataset (2026-09-07). Since 2026-10-12 its structures are the G:T-mismatch rerun (parent MutS_alpha_MSH6_GT, own WT on the same duplex); the 42 variants of the earlier batch, folded on a 136/137-nt duplex against MSH2's 21/20-nt WT, are superseded and stay in PLDDTs/MutS_alpha for provenance only.",
-    "_scope": "Pre-extracted pLDDT only, enforced by structure_metrics_stages in the runner: raw plddt extraction stays on the parent complex. (Until 2026-11-03 the list also held the notebook stages and ensemble_aware, which the release no longer has.)",
+    "_scope": "Pre-extracted pLDDT and the coordinate sweeps, enforced by structure_metrics_stages in the runner: raw plddt extraction stays on the parent complex.",
     "_cohort_route": "The canonical cohort loader reads MutS_alpha_MSH6_GT's summary, filters _MSH6_ source filenames, and applies plddt_row_range. The separate MSH6 gallery summary is not the canonical cohort source.",
     "output_prefix": "MSH6",
     "cohort_parent": "MutS_alpha_MSH6_GT",
@@ -479,9 +480,10 @@
     },
     "wt_artifact": "MutS_alpha_MSH6_GT_WT_data",
     "structure_metrics_stages": [
-      "plddt_distribution"
+      "plddt_distribution",
+      "ensemble_aware"
     ],
-    "_coord_frame": "2026-10-15: coordinate metrics read the WT rigid-core-fit cache (coord_cache_dir, built from the USalign cache by cache_builders/subunit_core_fit.py, no drive): one WT-defined core of confident, distance-stable residues, the same for every variant. USalign as the builders called it superposes on the first chain only. COORD_FRAME=usalign_first_chain switches to the control cache (same structures, old coordinates; experiments/coord_core_fit). DNA caches and the structure index stay in cache_dir."
+    "_coord_frame": "2026-10-15: coordinate metrics read the WT rigid-core-fit cache (coord_cache_dir, built from the USalign cache by cache_builders/subunit_core_fit.py, no drive): one WT-defined core of confident, distance-stable residues, the same for every variant. USalign as the builders called it superposes on the first chain only. COORD_FRAME=usalign_first_chain switches to the control cache (same structures, old coordinates; analyses/coordinates/coord_core_fit). DNA caches and the structure index stay in cache_dir."
   },
   "PIK3CA": {
     "enabled": true,
@@ -500,7 +502,7 @@
         "sweep_dir": "metric_analysis/structure_metrics/PIK3CA/ensemble_aware_usalign/ensemble_sweeps"
       }
     },
-    "_coord_frame": "2026-10-15: coordinate metrics read the WT rigid-core-fit cache (coord_cache_dir, built from the USalign cache by cache_builders/subunit_core_fit.py, no drive): one WT-defined core of confident, distance-stable residues, the same for every variant. USalign as the builders called it superposes on the first chain only. COORD_FRAME=usalign_first_chain switches to the control cache (same structures, old coordinates; experiments/coord_core_fit). DNA caches and the structure index stay in cache_dir.",
+    "_coord_frame": "2026-10-15: coordinate metrics read the WT rigid-core-fit cache (coord_cache_dir, built from the USalign cache by cache_builders/subunit_core_fit.py, no drive): one WT-defined core of confident, distance-stable residues, the same for every variant. USalign as the builders called it superposes on the first chain only. COORD_FRAME=usalign_first_chain switches to the control cache (same structures, old coordinates; analyses/coordinates/coord_core_fit). DNA caches and the structure index stay in cache_dir.",
     "sweep_dir": "metric_analysis/structure_metrics/PIK3CA/ensemble_aware/ensemble_sweeps",
     "archive_root": "$DRIFT_ARCHIVE_ROOT/PIK3CA",
     "protein_chains": [
@@ -543,7 +545,7 @@
   },
   "MutS_alpha_MSH6_GT": {
     "enabled": true,
-    "_status": "ENABLED 2026-10-12. The MSH6 G:T-mismatch rerun as its own parent complex, so MSH6 is measured against a WT folded on the same duplex; it replaces MutS_alpha as MSH6's cohort_parent. Archives validated 148/148 and pLDDTs extracted 2026-10-12 (experiments/elements_drive_audit/, experiments/msh6_gt_early/). The rmsf/dna coordinate caches are NOT built yet, so the rmsf, dna and ensemble_aware stages will fail until they are. MSH2 stays on MutS_alpha and its 21/20 insertion-loop WT.",
+    "_status": "ENABLED 2026-10-12. The MSH6 G:T-mismatch rerun as its own parent complex, so MSH6 is measured against a WT folded on the same duplex; it replaces MutS_alpha as MSH6's cohort_parent. Archives validated 148/148 and pLDDTs extracted 2026-10-12 (analyses/provenance/elements_drive_audit/, experiments/msh6_gt_early/). The rmsf/dna coordinate caches are NOT built yet, so the rmsf, dna and ensemble_aware stages will fail until they are. MSH2 stays on MutS_alpha and its 21/20 insertion-loop WT.",
     "_construct": "af3_jobs/configs/MutS_alpha_MSH6_GT.json: MSH2 chain A (934 aa, unmutated), MSH6 chain B (1360 aa, mutated), a 21/21-nt duplex with one central G:T mismatch (chains C, D), 2x ATP/Mg, 25 seeds x 5 samples. 147 MSH6 ClinVar missense + WT = 148 archives.",
     "_labels": "Every MSH6 missense in the 2026-09-25 ClinVar export: 66 Driver / 77 Passenger; the four start-codon variants (M1I/L/T/V) carry no label, as in PTEN.",
     "output_prefix": "MutS_alpha_MSH6_GT",

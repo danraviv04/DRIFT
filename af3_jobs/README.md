@@ -126,7 +126,7 @@ First use: `muts_jsons/MutS_alpha_MSH6_GT_WT_seed_ext_26-75.zip`, 10 × 5 seeds 
 python -m af3_jobs.wt_from_variant <variant>_data.json --config <config> --out muts_jsons/<prefix>_WT_vartmpl
 ```
 
-AF3's template search drops any hit that exactly matches the query over more than 95% of its length. So when the PDB holds the exact WT construct, the WT job loses that template while every variant keeps it. This happened to MSH2 (2O8B) and PIK3CA (4L1B, 5DXH); see `experiments/wt_variant_offset/`. This tool takes a finished variant job's `_data.json` (MSAs and templates included) and builds an inference-only WT job from it. Only three things change:
+AF3's template search drops any hit that exactly matches the query over more than 95% of its length. So when the PDB holds the exact WT construct, the WT job loses that template while every variant keeps it. This happened to MSH2 (2O8B) and PIK3CA (4L1B, 5DXH); see `analyses/provenance/wt_variant_offset/`. This tool takes a finished variant job's `_data.json` (MSAs and templates included) and builds an inference-only WT job from it. Only three things change:
 
 - the target chain's sequence,
 - the query row of that chain's `unpairedMsa` and `pairedMsa`,

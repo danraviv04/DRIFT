@@ -298,7 +298,7 @@ def si_rows(rows, caption, page_w=None, x0=10, gap=14, row_gap=10, letter_room=1
             placeholder=(436, 250)):
     """A supplementary figure as rows of panels at NATIVE scale. Returns a spec.
 
-    The v6 SI panels are written by experiments/si_figures at their final journal
+    The v6 SI panels are written by figures/si/lib at their final journal
     width (89 or 180 mm) with their final text size, so they are placed 1:1 and
     left-aligned; only a row wider than the page is shrunk, and then the whole
     figure shrinks with it so the text stays one size. Rows run top to bottom,
@@ -506,7 +506,7 @@ LAYOUTS = {
     # Order and panel letters follow SI_FIGURE_LIST in the analysis repo's
     # drift/si_panels.py, kept in step BY HAND (this script cannot
     # import from there). Numbers come from that order:
-    # experiments/si_figures/FIGURE_NUMBERS.md. The panels are exported into
+    # figures/si/lib/FIGURE_NUMBERS.md. The panels are exported into
     # figures/si_panels/ as vector PDFs by `python -m drift.si_panels`.
     #
     # The panels are drawn at journal widths (89 and 180 mm) with their final
@@ -542,7 +542,7 @@ LAYOUTS = {
 # 2026-09-15. Figure1_resKS -- Figure 1 with D1 removed entirely, residue KS
 # everywhere. Derived from Figure1 so it tracks any future re-stack.
 #
-# Row 4 (f, g, h) is rebuilt by experiments/figure1_ks_combo/make_panels_gh.py
+# Row 4 (f, g, h) is rebuilt by figures/figure1/ks_combo/make_panels_gh.py
 # on the subunit-split branch: the violin is single-descriptor now, so it loses
 # the twin axis and the divider and gets its horizontal grid back, and the ROC
 # and the N-sweep carry one series each instead of three.
@@ -578,7 +578,7 @@ def _figure1_resks(gene, title, abstract="graphical_abstract_2026-09"):
                                   f"{gene}_residue_distributions"),
                 "mutant", "mutant_helix_zoom"),
             # 2026-10-14: f is the WT-vs-WT background with passengers and drivers
-            # (experiments/pten_wt_null_panel --split seed --panel, N=100), replacing
+            # (analyses/msh6_case_study/wt_backgrounds_200 --split seed --panel, N=100), replacing
             # the two-group driver/passenger violin; the text cites Fig. 1f for both.
             [f"{gene}_wt_null_panel", f"{gene}_ROC_resKS", f"{gene}_Nsweep_resKS"],
             title),
@@ -596,11 +596,11 @@ def _figure1_resks(gene, title, abstract="graphical_abstract_2026-09"):
 
 # 2026-10-16: rows e-h moved from PTEN to MSH6 (balanced classes, 66 drivers and
 # 77 passengers, and a clear ensemble-size effect). Panels from the analysis repo:
-# e experiments/si_figures/ks_sequence_panel.py --gene MSH6 --driver A1055P
+# e figures/si/lib/ks_sequence_panel.py --gene MSH6 --driver A1055P
 #   --passenger I1054F --panel (2026-10-22: was R772L/E221D, 551 residues apart;
-#   adjacent sites now share one window, see experiments/fig1e_near_pair);
-#   f experiments/pten_wt_null_panel --gene MSH6
-#   (75-seed WT pool, N=100, seed-matched); g experiments/figure1_ks_combo/
+#   adjacent sites now share one window, see analyses/msh6_case_study/fig1e_near_pair);
+#   f analyses/msh6_case_study/wt_backgrounds_200 --gene MSH6
+#   (75-seed WT pool, N=100, seed-matched); g figures/figure1/ks_combo/
 #   make_panels_gh.py --gene MSH6 --fingerprint d61d29328362; h drift.
 #   article_figures --fig1-h MSH6. All v6_ca.
 # 2026-10-16: panel a is the DRIFT artwork (figures/source/graphical_abstract_2026-10,
@@ -620,7 +620,7 @@ LAYOUTS["Figure1_resKS_PTEN"] = _figure1_resks("PTEN", "The KS-score on the PTEN
 # (the quantity in d), on one scale for both sides, in the same colours, crops
 # and aspect ratios as the four files it replaces, so nothing else moves. The
 # caption must say the radius is exaggerated. Renders: analysis repo,
-# experiments/fig1b_corefit_models/render_panel_b.py. Figure1_resKS is unchanged.
+# figures/figure1/fig1b/render_panel_b.py. Figure1_resKS is unchanged.
 # -----------------------------------------------------------------------------
 def with_stems(spec, mapping):
     """Swap panel files in their slots. Only for files at the old file's aspect."""
@@ -826,7 +826,7 @@ LAYOUTS["Figure1_KS"] = with_row4(
 # Rows, bottom up: f g h | e | c d | a beside b. Built to print as large as the
 # manuscript page allows (the page holds it by height):
 #   b   the stacked render pairs with 96 pt magnifier circles, text x1.2 and the
-#       RMSF key as a bar underneath (analysis repo experiments/fig1b_corefit_models/
+#       RMSF key as a bar underneath (analysis repo figures/figure1/fig1b/
 #       render_panel_b.py --style tubes_rmsf --compose-only --stack-bubble-d 96
 #       --font-scale 1.2 --key-below); without a key column b is narrower, so a and
 #       b share a taller row.
@@ -834,7 +834,7 @@ LAYOUTS["Figure1_KS"] = with_row4(
 #       --shift-note rmsd (RMSD only, at 10 pt); text ~10% larger once placed.
 #   e-h the same plots and data drawn at 0.87 (e, h) or 0.93 (f, g) of their usual
 #       size, so their text prints 15% / 8% larger (analysis repo
-#       experiments/figure1_layout/rerender_efgh.py; checked pixel-identical to the
+#       figures/figure1/layout/rerender_efgh.py; checked pixel-identical to the
 #       panels they replace at 1.0).
 # Gaps are tight (12 pt between rows, 22 around c/d), d draws WT in grey (panel e uses grey; d is
 # darker, #5a5a5a, line on top: --wt-colour "#5a5a5a" --wt-on-top), and f-h sit at 0.9 of their B-layout width,

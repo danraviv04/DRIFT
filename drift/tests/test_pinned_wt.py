@@ -134,7 +134,7 @@ class TestPinnedWT(unittest.TestCase):
 
 class TestPublicationReferences(unittest.TestCase):
     def test_correlation_reference_tracks_scientific_config(self):
-        from experiments.si_figures import ks_vs_am as module
+        from figures.si.lib import ks_vs_am as module
         rows = pd.DataFrame([dict(gene=g, subset="all", rho=r)
                              for g, r in module.V6_REFERENCE.items()])
         with tempfile.TemporaryDirectory() as directory, patch.object(
