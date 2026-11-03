@@ -1,6 +1,6 @@
 # DRIFT
 
-**D**river **R**ecognition from **I**nduced **F**luctuations in **T**ertiary structure.
+**D**river **R**ecognition from **I**nduced **F**luctuations in **T**hree dimenstional structures.
 
 Code for *Predicted structural ensembles of proteins can be more informative than the best
 single prediction* (Raviv, Dayan et al., in submission). DRIFT predicts an AlphaFold 3
