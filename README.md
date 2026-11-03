@@ -46,7 +46,7 @@ unpack into this folder's layout:
   - WT seed maps;
   - KRAS4B batch files;
   - the PTEN WT seed extension.
-  - the earlier MSH2 WT pLDDT matrix (`PLDDTs/MutS_alpha/legacy/`, backbone N atoms), one of Table S6's comparisons.
+  - the earlier MSH2 WT pLDDT matrix (backbone N atoms), one of Table S6's comparisons, in `analyses/seeds/seed_pairing/inputs/` (not under `PLDDTs/`, where MSH2's WT search would pick it up).
 
 The raw AlphaFold 3 output archives are only needed to redo the extraction
 (`run_all.sh extract`) or the Fig. 1b render; point `DRIFT_ARCHIVE_ROOT` at them.
@@ -106,7 +106,6 @@ Stage names are `run_all.sh`'s; `S_<x>` is a stage of `analyses/annotation/stage
 ## Known leftovers
 
 - **D1**, an earlier descriptor (mean pLDDT shift), is still computed alongside the KS-score in the score caches and in some comparison tables (AM+D1); no paper result uses it.
-- **The FOXA1 hotspot option.** `drift/core.py` still has a residue-interval label option named after FOXA1, the positional control that was removed from this release.
 - **Unused functions.** Parts of `drift/` (the learned-fusion models) and of `metric_analysis/pipeline/library/structure_metrics.py` serve no paper result. They will be removed together with D1 in a later revision.
 - **Table S6, POLE row.** It was computed before POLE's eight 32-seed drivers were cut to 25 seeds and P356S left the cohort, which changes which POLE variants are sampled. Today's code gives a same-seed r of 0.73 (paper 0.74) and a KS change of −0.006 (paper −0.003); the other five genes reproduce exactly.
 - **The tests need the data:** `PYTHONPATH=. pytest drift/tests metric_analysis/tests af3_jobs/tests`.

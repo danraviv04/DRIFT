@@ -22,7 +22,6 @@ SUPPORTED_LABEL_MODES = {
     # pipeline and read through load_continuous_configs().
     "continuous_assay",
     "positive_list",
-    "hotspot_range",
     "clinvar_by_subunit",
     "binary_csv",
 }
@@ -30,7 +29,6 @@ SUPPORTED_LABEL_MODES = {
 _LABEL_REQUIRED_KEYS = {
     "continuous_assay": {"target"},
     "positive_list": {"path"},
-    "hotspot_range": {"start_config_key", "end_config_key"},
     "clinvar_by_subunit": {"subunit_files"},
     "binary_csv": {"path", "mutation_col", "label_col"},
 }

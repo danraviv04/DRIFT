@@ -66,10 +66,12 @@ def main():
                 if pd.notna(r0.plddt_row_range_start) else slice(None))
         pools = {"WT": pd.read_csv(r0.wt_source_file, index_col=0)}
         if g == "MSH2":
-            # The pre-2026-04-02 MSH2 WT (backbone N atoms, superseded) ships with the data.
-            # It is required: pair_score draws from one generator shared by all genes, so
-            # leaving a pool out would shift every later gene's numbers.
-            old = ROOT / "PLDDTs/MutS_alpha/legacy/MutS_alpha_MSH2_WT_2026-04-02_plddt_values.csv"
+            # The pre-2026-04-02 MSH2 WT (backbone N atoms, superseded) ships with the data, in
+            # this folder's inputs/: under PLDDTs/MutS_alpha the WT search (*WT*, recursive)
+            # would add it to MSH2's WT pool. It is required: pair_score draws from one
+            # generator shared by all genes, so leaving a pool out would shift every later
+            # gene's numbers.
+            old = Path(__file__).resolve().parent / "inputs" / "MutS_alpha_MSH2_WT_2026-04-02_plddt_values.csv"
             pools["WT_old_2026-04-02"] = pd.read_csv(old, index_col=0)
             pools["WT_MSH6_GT"] = pd.read_csv(ROOT / "PLDDTs/MutS_alpha_MSH6_GT/MutS_alpha_MSH6_GT_WT_plddt_values.csv",
                                               index_col=0)

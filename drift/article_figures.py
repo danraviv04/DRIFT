@@ -495,13 +495,11 @@ def panel_added_information(out, _labeled):
     st, pc = stats.combine_pvalues(primary.p.values, method="fisher")
     record(
         "F2e", "fisher_combined_p", float(pc),
-        f"{len(primary)} annotation genes; FOXA1 displayed but excluded as a positional control",
+        f"{len(primary)} annotation genes",
     )
     fig, ax = plt.subplots(figsize=(5.4, 4.0), constrained_layout=True)
-    display_gene = t.gene.where(~t.gene.eq("FOXA1"), "FOXA1 (control)")
-    colors = [GRY if g == "FOXA1" else "#1a7f37" if p < .05 else GRY
-              for g, p in zip(t.gene, t.p)]
-    ax.barh(display_gene, t.chi2, color=colors, alpha=.85)
+    colors = ["#1a7f37" if p < .05 else GRY for p in t.p]
+    ax.barh(t.gene, t.chi2, color=colors, alpha=.85)
     crit = stats.chi2.ppf(.95, 1)
     ax.axvline(crit, ls="--", color="#b00020", lw=1.2)
     ax.text(crit + .3, -.4, "p=0.05", fontsize=7, color="#b00020")

@@ -124,7 +124,6 @@ def scan_plddt_sources(runtime_configs, max_examples=3):
 # targets only (analyses/continuous/continuous_functional), never thresholded. The
 # former TP53 cut (Phenotypic_Selection_Model >= 3.25) is deleted.
 
-FOXA1_HOTSPOT_RANGE = (168, 269)
 MUTSALPHA_MSH2_GT_PATH = PROJECT_ROOT / "Ground_Truths" / "ClinVar" / "clinvar_result_msh2.csv"
 MUTSALPHA_MSH6_GT_PATH = PROJECT_ROOT / "Ground_Truths" / "ClinVar" / "clinvar_result_msh6.csv"
 MUTSALPHA_MSH2_AFM_PATH = PROJECT_ROOT / "Ground_Truths" / "AlphaMissense" / "afm_MSH2_predictions.tsv"
@@ -150,8 +149,6 @@ FUSION_MODEL_SWEEP_SPACE = {
 D1_MAX_STRUCTURES_PER_VARIANT = max(FUSION_MODEL_SWEEP_SPACE["d1_max_structures_per_variant"])
 
 SWEEP_BASE_CONFIG = {
-    "foxa1_hotspot_start": FOXA1_HOTSPOT_RANGE[0],
-    "foxa1_hotspot_end": FOXA1_HOTSPOT_RANGE[1],
     "seed": SEED,
     "folds": FOLDS,
     "epochs": EPOCHS,
@@ -233,7 +230,7 @@ if not WANDB_AVAILABLE:
 
 
 MUTATION_RE = re.compile(r"(?<![A-Z0-9])([A-Z])(\d+)([A-Z])(?![A-Z0-9])")  # token-bounded: PIK3CA is not K3C
-KNOWN_GENES = {"TP53", "POLE", "FOXA1", "MutSalpha"}
+KNOWN_GENES = {"TP53", "POLE", "MutSalpha"}
 
 def _collect_afm_paths(sources):
     if isinstance(sources, (str, Path)):
@@ -679,8 +676,6 @@ def build_configured_external_gt(protein_configs, run_config):
                 label_col=label_cfg["label_col"],
                 gene_col=label_cfg.get("gene_col"),
             ))
-        elif mode == "hotspot_range":
-            continue
         else:  # Loader validation should make this unreachable.
             raise ValueError(f"Unsupported label mode for {gene}: {mode!r}")
     if not parts:
@@ -691,11 +686,8 @@ def build_configured_external_gt(protein_configs, run_config):
 
 
 def apply_configured_label_policies(merged_df, protein_configs, run_config):
-    """Apply modes whose negatives are defined by absence or mutation position."""
+    """Apply modes whose negatives are defined by absence (unlisted variants)."""
     out = merged_df.copy()
-    mutation_pos = pd.to_numeric(
-        out["mutation"].str.extract(r"([0-9]+)", expand=False), errors="coerce"
-    )
     for gene, protein_cfg in protein_configs.items():
         label_cfg = protein_cfg["label"]
         mode = label_cfg["mode"]
@@ -707,15 +699,6 @@ def apply_configured_label_policies(merged_df, protein_configs, run_config):
             out.loc[positive, "gt_source"] = f"{gene}_positive_list_present_driver"
             out.loc[negative, "label"] = 0
             out.loc[negative, "gt_source"] = f"{gene}_not_in_positive_list_passenger"
-        elif mode == "hotspot_range":
-            start = int(run_config[label_cfg["start_config_key"]])
-            end = int(run_config[label_cfg["end_config_key"]])
-            hotspot = gene_mask & mutation_pos.between(start, end, inclusive="both")
-            non_hotspot = gene_mask & ~hotspot
-            out.loc[hotspot, "label"] = 1
-            out.loc[hotspot, "gt_source"] = f"{gene}_hotspot_{start}_{end}"
-            out.loc[non_hotspot, "label"] = 0
-            out.loc[non_hotspot, "gt_source"] = f"{gene}_outside_hotspot_passenger"
     return out
 
 _AFM_TABLE = None
@@ -909,7 +892,6 @@ def summarize_variant_flow(d1_df, merged_all_df, labeled_df, unknown_df):
 
 
 def build_labeled_dataset_for_config(
-    foxa1_hotspot_range,
     d1_max_structures_per_variant,
     d1_ratio_mode=D1_RATIO_MODE,
     d1_seed=SEED,
@@ -920,13 +902,7 @@ def build_labeled_dataset_for_config(
     if "afm_class" not in afm_df.columns:
         raise RuntimeError("`afm_class` is missing from AFM table.")
 
-    hotspot_start, hotspot_end = [int(x) for x in foxa1_hotspot_range]
-    if hotspot_start > hotspot_end:
-        raise ValueError("FOXA1 hotspot start must be <= end")
-
     label_run_config = dict(run_config or {})
-    label_run_config.setdefault("foxa1_hotspot_start", hotspot_start)
-    label_run_config.setdefault("foxa1_hotspot_end", hotspot_end)
 
     d1_sampling_policy = SamplingPolicy.coerce(d1_sampling_policy)
     label_run_config.setdefault("d1_sampling_mode", d1_sampling_policy.mode)
@@ -1805,8 +1781,6 @@ def _resolve_run_config(overrides=None):
     if overrides:
         cfg.update(dict(overrides))
 
-    cfg["foxa1_hotspot_start"] = int(cfg["foxa1_hotspot_start"])
-    cfg["foxa1_hotspot_end"] = int(cfg["foxa1_hotspot_end"])
     cfg["seed"] = int(cfg["seed"])
     cfg["folds"] = int(cfg["folds"])
     cfg["epochs"] = int(cfg["epochs"])
@@ -2169,7 +2143,6 @@ def run_fusion_experiment(
 ):
     cfg = _resolve_run_config(config_overrides)
     data_pack = build_labeled_dataset_for_config(
-        foxa1_hotspot_range=(cfg["foxa1_hotspot_start"], cfg["foxa1_hotspot_end"]),
         d1_max_structures_per_variant=cfg["d1_max_structures_per_variant"],
         d1_ratio_mode=cfg["d1_ratio_mode"],
         d1_seed=cfg["seed"],
@@ -2197,8 +2170,6 @@ def run_fusion_experiment(
         out_metrics["delta_oof_auc_vs_logreg"] = float(out_metrics["oof_auc"] - baseline_metrics["oof_auc"])
 
     out_metrics.update({
-        "foxa1_hotspot_start": cfg["foxa1_hotspot_start"],
-        "foxa1_hotspot_end": cfg["foxa1_hotspot_end"],
         "d1_ratio_mode": cfg["d1_ratio_mode"],
         "d1_max_structures_per_variant": cfg["d1_max_structures_per_variant"],
         "n_labeled": data_pack["n_labeled"],

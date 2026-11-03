@@ -26,12 +26,11 @@ from Bio.PDB.MMCIFParser import MMCIFParser
 # parsed as "K3C". No other dataset's names change (checked 2026-10-12 on every
 # pLDDT filename and label-source string DRIFT feeds this function).
 _MUTATION_RE = re.compile(r"(?<![A-Z0-9])([A-Z])(\d+)([A-Z])(?![A-Z0-9])")
-_KNOWN_GENES = {"TP53", "POLE", "FOXA1", "MutSalpha"}
+_KNOWN_GENES = {"TP53", "POLE", "MutSalpha"}
 _GENE_CANONICAL = {
     "P53": "TP53",
     "TP53": "TP53",
     "POLE": "POLE",
-    "FOXA1": "FOXA1",
     "MUTSALPHA": "MutSalpha",
     "MUTS_ALPHA": "MutSalpha",
 }
@@ -61,7 +60,7 @@ def infer_gene_from_variant(value: Any) -> str | None:
         token = canonical_gene(s.split("_", 1)[0])
         if token in _KNOWN_GENES:
             return token
-    for token in ["TP53", "P53", "POLE", "FOXA1"]:
+    for token in ["TP53", "P53", "POLE"]:
         if token in s:
             return canonical_gene(token)
     return None

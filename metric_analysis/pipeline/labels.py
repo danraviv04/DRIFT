@@ -195,7 +195,7 @@ def _get_csv_label_lookup(cfg):
 
 def classify_allele_or_artifact(value, cfg):
     """Dispatches to whichever labeling scheme this protein's config uses:
-    - hotspot_range (FOXA1): Driver/Passenger purely from mutated-residue index.
+    - hotspot_range: Driver/Passenger purely from mutated-residue index.
     - clinvar (single flat list, KRAS): Driver/Passenger from ClinVar pathogenic/benign lists.
     - clinvar_by_gene (MutS_alpha): same as clinvar, but the ClinVar list is selected
       per-gene since MSH2/MSH6 mutation codes use independent numbering.

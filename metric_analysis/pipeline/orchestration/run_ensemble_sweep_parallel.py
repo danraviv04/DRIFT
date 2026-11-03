@@ -26,22 +26,23 @@ only then do the N chunk workers run — each reading just its own small pre-spl
 Usage
 -----
 # One-time prep (single process, run this first — and after any coordinate-cache rebuild):
-    python -m metric_analysis.pipeline.orchestration.run_ensemble_sweep_parallel --protein FOXA1 --prepare --total-chunks 4
+    python -m metric_analysis.pipeline.orchestration.run_ensemble_sweep_parallel --protein POLE --prepare --total-chunks 4
 
 # Run the 4 chunks (can run concurrently):
-    python -m metric_analysis.pipeline.orchestration.run_ensemble_sweep_parallel --protein FOXA1 --chunk 0 --total-chunks 4
-    python -m metric_analysis.pipeline.orchestration.run_ensemble_sweep_parallel --protein FOXA1 --chunk 1 --total-chunks 4
-    python -m metric_analysis.pipeline.orchestration.run_ensemble_sweep_parallel --protein FOXA1 --chunk 2 --total-chunks 4
-    python -m metric_analysis.pipeline.orchestration.run_ensemble_sweep_parallel --protein FOXA1 --chunk 3 --total-chunks 4
+    python -m metric_analysis.pipeline.orchestration.run_ensemble_sweep_parallel --protein POLE --chunk 0 --total-chunks 4
+    python -m metric_analysis.pipeline.orchestration.run_ensemble_sweep_parallel --protein POLE --chunk 1 --total-chunks 4
+    python -m metric_analysis.pipeline.orchestration.run_ensemble_sweep_parallel --protein POLE --chunk 2 --total-chunks 4
+    python -m metric_analysis.pipeline.orchestration.run_ensemble_sweep_parallel --protein POLE --chunk 3 --total-chunks 4
 
 # Merge (computes performance/summary stats on the *combined* raw data — these need
 # every artifact together, not per-chunk subsets, so this step is not parallelized):
-    python -m metric_analysis.pipeline.orchestration.run_ensemble_sweep_parallel --protein FOXA1 --merge --total-chunks 4
+    python -m metric_analysis.pipeline.orchestration.run_ensemble_sweep_parallel --protein POLE --merge --total-chunks 4
 
 # Dry-run on a handful of artifacts (correctness check before a full run):
-    python -m metric_analysis.pipeline.orchestration.run_ensemble_sweep_parallel --protein FOXA1 --chunk 0 --total-chunks 4 --max-artifacts 5
+    python -m metric_analysis.pipeline.orchestration.run_ensemble_sweep_parallel --protein POLE --chunk 0 --total-chunks 4 --max-artifacts 5
 
-# Supported proteins: FOXA1, MutS_alpha, KRAS, POLE, TP53
+# Datasets: the coordinate datasets of metric_analysis/protein_configs.json
+# (POLE, PTEN, VHL, PIK3CA, MSH2, MSH6 in the paper; run_all.sh K4 runs them all)
 """
 
 import argparse

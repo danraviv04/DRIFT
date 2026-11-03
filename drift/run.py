@@ -112,8 +112,8 @@ FEATURE_VARIANTS = {
 # analyses/continuous/continuous_functional (TP53, KRAS, PTEN, MSH2 assay scores).
 # The mixed "evaluation" group went with it.
 #
-# FOXA1, the positional control (label mode hotspot_range: a residue interval,
-# not a clinical annotation), was in no GT group and left the release on 2026-11-03.
+# FOXA1, the positional control (labelled by a residue interval, not a clinical
+# annotation), was in no GT group and left the release on 2026-11-03.
 # --gt-group restricts training+CV to one group; 'all' is every enabled binary
 # dataset (unchanged behavior/output paths); 'each' runs every group.
 # --------------------------------------------------------------------------- #
@@ -348,7 +348,6 @@ def build_or_load_dataset(size, cfg, force=False):
         print(f"[data] cache missing ensemble-shift columns -> recomputing: {cache.name}")
     print(f"[data] no cache -> recomputing D1 + ensemble-shift from pLDDT CSVs (size={size}) ...")
     pack = build_labeled_dataset_for_config(
-        foxa1_hotspot_range=(cfg["foxa1_hotspot_start"], cfg["foxa1_hotspot_end"]),
         d1_max_structures_per_variant=size,
         d1_ratio_mode=cfg["d1_ratio_mode"],
         d1_seed=cfg["seed"],

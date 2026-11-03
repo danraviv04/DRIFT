@@ -1,28 +1,28 @@
 #!/usr/bin/env python3
 """
-Standalone parallel RMSF coordinate cache repair — FOXA1, KRAS, MutS_alpha, TP53.
+Aligned C-alpha coordinate cache (US-align onto the WT), built in parallel chunks.
 
-Splits the repair work across N independent processes, each handling a disjoint
-subset of archives. Safe to run concurrently — each process writes to its own
-chunk-specific parquet file with no contention on the main cache.
-
-BEFORE RUNNING: interrupt/stop the notebook kernel for that protein.
+Splits the work across N independent processes, each handling a disjoint subset of
+archives. Safe to run concurrently: each process writes its own chunk parquet, and
+--merge combines them into the dataset's cache. run_all.sh (extract, X2) runs it for
+every coordinate dataset; it needs the raw archives (DRIFT_ARCHIVE_ROOT).
 
 Usage
 -----
-# Repair FOXA1 with 4 parallel chunks:
-    python -m metric_analysis.pipeline.cache_builders.repair_rmsf_cache_chunk --protein FOXA1 --chunk 0 --total-chunks 4
-    python -m metric_analysis.pipeline.cache_builders.repair_rmsf_cache_chunk --protein FOXA1 --chunk 1 --total-chunks 4
-    python -m metric_analysis.pipeline.cache_builders.repair_rmsf_cache_chunk --protein FOXA1 --chunk 2 --total-chunks 4
-    python -m metric_analysis.pipeline.cache_builders.repair_rmsf_cache_chunk --protein FOXA1 --chunk 3 --total-chunks 4
+# Build POLE's cache with 4 parallel chunks:
+    python -m metric_analysis.pipeline.cache_builders.repair_rmsf_cache_chunk --protein POLE --chunk 0 --total-chunks 4
+    python -m metric_analysis.pipeline.cache_builders.repair_rmsf_cache_chunk --protein POLE --chunk 1 --total-chunks 4
+    python -m metric_analysis.pipeline.cache_builders.repair_rmsf_cache_chunk --protein POLE --chunk 2 --total-chunks 4
+    python -m metric_analysis.pipeline.cache_builders.repair_rmsf_cache_chunk --protein POLE --chunk 3 --total-chunks 4
 
 # Merge after all chunks finish:
-    python -m metric_analysis.pipeline.cache_builders.repair_rmsf_cache_chunk --protein FOXA1 --merge --total-chunks 4
+    python -m metric_analysis.pipeline.cache_builders.repair_rmsf_cache_chunk --protein POLE --merge --total-chunks 4
 
-# Dry-run (2 archives only):
-    python -m metric_analysis.pipeline.cache_builders.repair_rmsf_cache_chunk --protein FOXA1 --chunk 0 --total-chunks 4 --max-archives 2
+# Dry run (2 archives only):
+    python -m metric_analysis.pipeline.cache_builders.repair_rmsf_cache_chunk --protein POLE --chunk 0 --total-chunks 4 --max-archives 2
 
-# Supported proteins: FOXA1, KRAS, MutS_alpha, TP53
+# Datasets: any entry of metric_analysis/protein_configs.json with a coordinate cache
+# (POLE, PTEN, VHL, PIK3CA, MutS_alpha, MutS_alpha_MSH6_GT in the paper)
 """
 
 import argparse
