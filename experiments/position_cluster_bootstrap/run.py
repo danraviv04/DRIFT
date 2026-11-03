@@ -369,7 +369,7 @@ def main():
                           capture_output=True, text=True).stdout.strip()
     (args.out / "provenance.json").write_text(json.dumps({
         "fingerprint": FP, "cache_directory": str(CACHE),
-        "cache_manifest_sha256": sha(REPAIR / "cache_migration.csv"),
+        "cache_manifest_sha256": sha(REPAIR / "cache_migration.csv") if (REPAIR / "cache_migration.csv").exists() else None,
         "script_sha256": sha(__file__), "git_head": head,
         "reps": args.reps, "ks_rng_seed": KS_RNG_SEED, "combination_rng_seed": COMBO_RNG_SEED,
         "published_ks": str(PUBLISHED_KS), "published_combination": str(PUBLISHED_COMBO),

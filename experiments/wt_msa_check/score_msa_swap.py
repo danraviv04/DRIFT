@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Score the MSH2 MSA-swap control (README §4; 2026-10-16).
+"""Score the MSH2 MSA-swap control (Note S6).
 
 Two WT ensembles, identical inputs except chain A's MSA:
   WT@Q629R-MSA -- MutS_alpha_MSH2_WT_vartmpl, the production WT
@@ -64,7 +64,7 @@ NAME = "MutS_alpha_MSH2_WT_vartmpl_wtmsa"
 SAMPLE = re.compile(r"seed-(\d+)_sample-(\d+)")
 MSH2_ROWS = 934                 # chain A first: rows 0-933 are MSH2 residues 1-934
 TABLE_ROWS = 2294               # MSH2 934 + MSH6 1360
-SITE = (615, 645)               # where the Q629R search realigned (README §2), 1-based
+SITE = (615, 645)               # where the Q629R search realigned, 1-based
 N_BG, N_DISJ, N_VAR = 1000, 500, 5
 SEED = 20261016
 

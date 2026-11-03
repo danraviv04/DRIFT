@@ -41,11 +41,9 @@ dependencies:
       - pypdf==6.16.1         # assembles the figure pages (figures/make_figures.py)
   # Optional, not needed for any result in the paper:
   # - wandb=0.25.1            # progress logging, off unless enabled
-  # - pybigwig=0.3.25         # conservation tooling (metric_analysis/pipeline/library/conservation.py)
-  # - pip: [pymupdf==1.28.2]  # PDF thumbnails in the results galleries (collect_results)
 #
 # Not installable with conda, needed only for the steps named:
-#   AlphaFold 3: 3.0.1 on the Athena cluster, plus a 3.0.3 build for the 296 TP53 seed
+#   AlphaFold 3: 3.0.1 on an HPC cluster, plus a 3.0.3 build for the 296 TP53 seed
 #     extensions (Supplementary Note S6). Job inputs come from `python -m af3_jobs`.
 #   ChimeraX 1.11.1: Figure 1b renders (experiments/fig1b_corefit_models/render_panel_b.py).
-#   pigz, Slurm: the local and cluster AlphaFold runners (af3_jobs/local_runner).
+#   pigz, Slurm, Apptainer: the AlphaFold 3 runners (af3_jobs/slurm, af3_jobs/local_runner).

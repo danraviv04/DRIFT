@@ -1066,7 +1066,7 @@ def main(argv=None):
         print(f"  -> {out.relative_to(REPO)}"
               + (f"   ({miss} placeholder{'s' if miss != 1 else ''})" if miss else ""))
     if total_missing:
-        print(f"\n{total_missing} panel(s) still to be made -- see figures/source/README "
+        print(f"\n{total_missing} panel(s) still to be made -- see README.md (figures/) "
               "and `python make_figures.py --list`")
     return 0
 

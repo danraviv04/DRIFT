@@ -49,9 +49,8 @@ from .protein_config import protein_config_fingerprint
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
-# metric_analysis is an editable install pointing at one fixed checkout, and
-# sys.path[0] is this file's directory, so a worktree run needs this to import
-# its OWN tree. See experiments/mutsalpha_subunit_split/README.md.
+# metric_analysis may be installed (editable) from another checkout; put this
+# repository first so it imports its own tree.
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 

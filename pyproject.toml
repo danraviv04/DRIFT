@@ -15,9 +15,9 @@ requires-python = ">=3.10"
 run-structure-metrics   = "metric_analysis.pipeline.orchestration.run_structure_metrics:main"
 af3-jobs                = "af3_jobs.cli:main"
 
-# Explicit package list: the metric_analysis/ directory also holds multi-GB output
-# trees (structure_metrics/, results/) and non-package folders (conservation/,
-# notebooks/, tests/) that must not be swept in by auto-discovery.
+# Explicit package list: metric_analysis/ also holds multi-GB data and output trees
+# (structure_metrics/, manifests/) and tests/, which must not be swept in by
+# auto-discovery.
 [tool.setuptools]
 packages = [
     "drift",

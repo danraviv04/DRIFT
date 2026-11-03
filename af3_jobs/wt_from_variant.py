@@ -4,7 +4,7 @@ Why: AF3's template search drops a hit that exactly matches the query over >95% 
 length (``max_subsequence_ratio``). When the PDB holds the exact WT construct, the WT job
 loses that template and every variant keeps it (one substitution breaks the match), so
 the WT background is offset from all variants alike (MSH2: 2O8B; PIK3CA: 4L1B, 5DXH;
-experiments/wt_variant_offset/README.md).
+see experiments/wt_variant_offset/).
 
 The fix: take a typical variant's MSA- and template-ready ``_data.json``, put the WT
 residue back in the query, and run inference only (``--run_data_pipeline=false``, as for

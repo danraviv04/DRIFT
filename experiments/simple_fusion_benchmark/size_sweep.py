@@ -1,4 +1,4 @@
-"""Non-learned fusion across ensemble sizes; see README.md for interpretation.
+"""Non-learned fusion across ensemble sizes.
 
 This is the non-learned half of the benchmark on its own, swept over the seven
 ensemble sizes and ten descriptor seeds the feature caches provide. No model is

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Build the MSH2 MSA-swap control job (README §4; 2026-10-16).
+"""Build the MSH2 MSA-swap control job (Note S6).
 
 MutS_alpha_MSH2_WT_vartmpl is the Q629R job with the WT residue put back, so it carries
 Q629R's templates AND Q629R's MSA. This job differs from it ONLY in chain A's MSA:

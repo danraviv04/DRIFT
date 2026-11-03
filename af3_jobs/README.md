@@ -1,9 +1,7 @@
 # af3_jobs — AlphaFold 3 input JSONs for mutation ensembles
 
-Replaces `generate_af3_ensembles.py`, which required editing module-level
-constants (and commenting out the previous protein's template) for every batch.
-Here a complex is described once in `af3_jobs/configs/<NAME>.json`, and the CLI
-turns that description into one AF3 job JSON per variant.
+A complex is described once in `af3_jobs/configs/<NAME>.json`, and the CLI turns that
+description into one AF3 job JSON per variant.
 
 ```bash
 python -m af3_jobs list                 # what configs exist
@@ -90,14 +88,12 @@ The ClinVar `gene` filter reads the transcript-level annotation, so a
 
 ## Tests
 
-No environment here has pytest, so the test file runs standalone:
-
 ```bash
-python af3_jobs/tests/test_af3_jobs.py
+PYTHONPATH=. pytest af3_jobs/tests      # or, without pytest: python af3_jobs/tests/test_af3_jobs.py
 ```
 
 The reproduction tests are the important ones: the `PTEN` and `MutS_alpha_MSH2`
-configs regenerate the JSONs already in `muts_jsons/` byte for byte.
+configs regenerate the paper's job JSONs (`muts_jsons/`, in the data) byte for byte.
 
 ## Known trap in the existing archives
 
@@ -107,7 +103,7 @@ The current 4B batch is `configs/KRAS4B.json` -> `KRAS4B_Mutations.zip`
 (188 aa, version 4); its jobs are named `KRAS_*` too, so keep its outputs in
 a separate directory from the 4A archives.
 
-## Homo-oligomers and name suffixes (2026-10-14)
+## Homo-oligomers and name suffixes
 
 - `"id": ["A", "B", "C", "D"]` declares one entity with four identical copies, which AF3 accepts directly. A `"mutate": true` entity is then mutated in **every** copy. That is how the TP53 tetramer batch was made, and `configs/TP53_hotspots.json` reproduces its A119D job exactly: name, seeds, sequences, ids, DNA and Zn. Its hotspot list was never folded; the config is kept as the TP53 construct `wt_from_variant` checks the A119D source against (the TP53 WT regeneration, `muts_jsons/P53_WT_vartmpl_manifest.json`).
 - `"job_suffix"` adds text after the variant: `P53_R175H_with_ZN_and_DNA`.
@@ -124,13 +120,13 @@ This writes `<job>_seeds_<a>-<b>_data.json` files, plus a zip and a manifest. Ea
 
 First use: `muts_jsons/MutS_alpha_MSH6_GT_WT_seed_ext_26-75.zip`, 10 × 5 seeds of the MSH6 G:T WT, for the seed-matched WT-vs-WT background.
 
-## WT jobs with the variants' templates (2026-10-15)
+## WT jobs with the variants' templates
 
 ```bash
 python -m af3_jobs.wt_from_variant <variant>_data.json --config <config> --out muts_jsons/<prefix>_WT_vartmpl
 ```
 
-AF3's template search drops any hit that exactly matches the query over more than 95% of its length. So when the PDB holds the exact WT construct, the WT job loses that template while every variant keeps it. This happened to MSH2 (2O8B) and PIK3CA (4L1B, 5DXH); see `experiments/wt_variant_offset/README.md`. This tool takes a finished variant job's `_data.json` (MSAs and templates included) and builds an inference-only WT job from it. Only three things change:
+AF3's template search drops any hit that exactly matches the query over more than 95% of its length. So when the PDB holds the exact WT construct, the WT job loses that template while every variant keeps it. This happened to MSH2 (2O8B) and PIK3CA (4L1B, 5DXH); see `experiments/wt_variant_offset/`. This tool takes a finished variant job's `_data.json` (MSAs and templates included) and builds an inference-only WT job from it. Only three things change:
 
 - the target chain's sequence,
 - the query row of that chain's `unpairedMsa` and `pairedMsa`,
@@ -138,10 +134,10 @@ AF3's template search drops any hit that exactly matches the query over more tha
 
 The templates are copied unchanged. Before writing anything, it checks every protein chain against the config's WT, the target chain against the named variant, and the MSA query rows against that variant's sequence. Any mismatch is refused. The default seeds are 1-25, the variants' own, so the jobs stay seed-paired. The job is named `<prefix>_WT_vartmpl`, so the archive comes back as `<prefix>_WT_vartmpl_data.tar.gz`, separate from the existing WT.
 
-Commands to run once the drive is mounted (read-only; each tar is one sequential read, one at a time):
+The MSH2 and PIK3CA WT jobs, from the raw archives:
 
 ```bash
-SRC=~/Thesis/wt_vartmpl_src && mkdir -p $SRC
+SRC=wt_vartmpl_src && mkdir -p $SRC
 tar -xzf $DRIFT_ARCHIVE_ROOT/MutSalpha/MutS_alpha_MSH2_Q629R_data.tar.gz -C $SRC \
     MutS_alpha_MSH2_Q629R_data/MutS_alpha_MSH2_Q629R/MutS_alpha_MSH2_Q629R_data.json   # 179 MB
 tar -xzf $DRIFT_ARCHIVE_ROOT/PIK3CA/PIK3CA_K532R_data.tar.gz -C $SRC \
@@ -154,5 +150,4 @@ python -m af3_jobs.wt_from_variant $SRC/PIK3CA_K532R_data/PIK3CA_K532R/PIK3CA_K5
 
 Upload the zips and run them with `--run_data_pipeline=false`. MutS-alpha took about 5 h per 25-seed job on the HPC cluster, so `--chunk` can split a job if the queue needs it.
 
-- `*.zip` is gitignored but loose `muts_jsons/*.json` files are not, so commit only the `_manifest.json` and delete the loose job folder.
-- When the archives land, point the pipeline's WT at them: `wt_hint` for MutS_alpha, `wt_artifact` for PIK3CA in `metric_analysis/protein_configs.json`.
+To use a regenerated WT, point the dataset's `wt_hint` / `wt_artifact` in `metric_analysis/protein_configs.json` at its archive.

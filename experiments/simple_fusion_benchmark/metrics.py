@@ -13,7 +13,14 @@ policies discard. AlphaMissense's own published cutoff works that way, and on
 these genes it beats the rate policies, so the pair is reported side by side
 rather than one of them being chosen.
 
-See README.md for what each policy is and is not allowed to look at.
+None of the policies looks at the held-out gene's labels, except `oracle_rate`:
+  train_prevalence    the training driver rate (the same gene's under stratified CV,
+                      the mean over the training genes under leave-one-gene-out)
+  train_youden_rate   the call rate maximising macro-mean Youden J on the training genes
+  train_youden_value  the score value maximising it
+  native_half         score >= 0.5 (probability outputs only)
+  oracle_rate         the held-out gene's true driver count: an upper bound, not an
+                      operating point
 """
 from __future__ import annotations
 

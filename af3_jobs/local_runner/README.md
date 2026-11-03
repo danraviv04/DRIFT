@@ -1,7 +1,7 @@
 # local_runner: AF3 in two stages on a machine without Slurm
 
 These scripts port the Slurm scripts `msa_scheduler.sh` / `msa_worker.sbatch` and
-`gen_scheduler.sh` / `gen_worker.sbatch` (in `../slurm/`) to a plain Linux box such as golgi,
+`gen_scheduler.sh` / `gen_worker.sbatch` (in `../slurm/`) to a plain Linux machine,
 with Apptainer and the AF3 `.sif`. Each stage runs as a pool of background
 workers, which survive logout.
 

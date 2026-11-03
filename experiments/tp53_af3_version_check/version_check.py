@@ -1,9 +1,12 @@
 #!/usr/bin/env python
-"""TP53: do the golgi-extended seeds (AF3 3.0.3, A40) differ from the Athena ones (3.0.1)?
+"""TP53: do the seeds extended on a second machine (AF3 3.0.3, A40) differ from the cluster ones (3.0.1)?
 
-Every TP53 variant has seeds 1-20 from Athena (3.0.1). Seeds 21-25 came from
+The two groups keep their machine names in the code and outputs: "athena" is the HPC
+cluster (AF3 3.0.1), "golgi" a server without Slurm (AF3 3.0.3, A40 GPUs).
+
+Every TP53 variant has seeds 1-20 from the cluster (3.0.1). Seeds 21-25 came from
 golgi (3.0.3/A40) for the 296 variants in golgi_ls_2026-10-15.txt and from
-Athena for the rest. Between 3.0.1 and 3.0.3, v3.0.2 moved flash attention and
+the cluster for the rest. Between 3.0.1 and 3.0.3, v3.0.2 moved flash attention and
 SwiGLU to Tokamax kernels and stopped deduplicating user-supplied unpaired MSAs
 (the extension JSONs carry the original MSA), so a small numeric offset is
 plausible. If one exists it adds to every golgi variant's KS against the WT.
@@ -16,10 +19,10 @@ equal 25-vs-25 splits, so the KS sample-size floor is the same everywhere:
 and the consequence for the paper's quantity, the KS against the WT:
   wt_shift = KS(variant 21-25, WT extension) - KS(variant 16-20, WT 16-20)
 plus the plain level shift, mean pLDDT(21-25) - mean pLDDT(1-20).
-Then golgi vs Athena on each: medians, Mann-Whitney, bootstrap CI of the
-difference in medians. Dan confirmed E221Q, E221V and E224A as Athena
-extensions (2026-10-18); bare folders in the golgi listing do not override
-that provenance. Other folder-only extensions remain excluded.
+Then golgi vs cluster on each: medians, Mann-Whitney, bootstrap CI of the
+difference in medians. E221Q, E221V and E224A are known cluster extensions;
+bare folders in the golgi listing do not override that provenance. Other
+folder-only extensions remain excluded.
 
     PYTHONPATH=. python \
         experiments/tp53_af3_version_check/version_check.py [--plddt-dir PLDDTs/TP53]

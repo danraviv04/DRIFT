@@ -30,5 +30,5 @@ another cluster. The scripts need bash 4 or later.
 - `gen_worker.sbatch` is the version that ran. By default (`JAX_MEMORY_DIAGNOSTIC=1`) it
   limits JAX to 25% of GPU memory and logs GPU memory once a second.
 - Only the site paths changed from the cluster copies; they now come from `slurm.env`.
-- `../local_runner/` runs the same two stages on a machine without Slurm (golgi) and
+- `../local_runner/` runs the same two stages on a machine without Slurm and
   writes the same output layout.

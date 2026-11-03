@@ -100,7 +100,10 @@ def run_cohort_file():
     m = m[m.label_manifest.notna()].reset_index(drop=True)
     cohort = cohort.merge(m[["protein", "mutation_code"]], on=["protein", "mutation_code"]).reset_index(drop=True)
     assert len(cohort) == len(m) == 1798 and (m.label == m.label_manifest).all()
-    moved = m.source_file != m.source_file_manifest
+    # Both files record absolute paths of the checkout that wrote them: compare the part
+    # inside the repo (PLDDTs/<folder>/<file>), so only the eight 25-seed rows differ.
+    inside = lambda path: str(path)[str(path).rfind("/PLDDTs/") + 1:] if "/PLDDTs/" in str(path) else str(path)
+    moved = m.source_file.map(inside) != m.source_file_manifest.map(inside)
     assert set(m.loc[moved, "mutation_code"]) == {"D275A", "D275G", "E277G", "P286H", "P286L",
                                                   "P286R", "P286S", "T278K"}, m.loc[moved, "mutation_code"]
     assert (m.loc[moved, "protein"] == "POLE").all()
