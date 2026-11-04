@@ -6,8 +6,8 @@ Code for *Predicted structural ensembles of proteins can be more informative tha
 single prediction* (Raviv, Dayan et al., in submission). DRIFT predicts an AlphaFold 3
 ensemble for every variant and for the wild type (25 seeds × 5 samples), and scores a
 variant by how far its per-residue pLDDT distributions move from the wild type's
-(the KS-score). This repository rebuilds every figure and number in the paper from the
-processed AlphaFold 3 data.
+(the KS-score). Given the processed AlphaFold 3 data (see Data), this repository rebuilds
+every figure and number in the paper.
 
 ## Contents
 
@@ -17,7 +17,7 @@ processed AlphaFold 3 data.
 | `drift/` | the method: structure draws (`structure_draws.py`), descriptors, score caches, evaluation |
 | `metric_analysis/` | pLDDT extraction, coordinate caches (US-align and WT rigid-core frames), labels, the canonical cohort |
 | `analyses/` | one folder per analysis behind a figure, table or number (map below), grouped as `cohort/`, `annotation/` (the driver/passenger cohort), `continuous/` (assay genes), `msh6_case_study/` (WT backgrounds, residue nulls), `coordinates/`, `seeds/` and `provenance/` (checks behind Notes S5 and S6 that read the raw archives) |
-| `figures/` | the code for each figure (`figure1/`, `figure2/`, `si/`) and the assembler (`make_figures.py`); the hand-made Figure 1 inputs (the BioRender graphical abstract, the ChimeraX render of Fig. 1b) go in `figures/source/` from the data, and a missing panel is drawn as a labelled placeholder |
+| `figures/` | the code for each figure (`figure1/`, `figure2/`, `si/`) and the assembler (`make_figures.py`); the hand-made Figure 1 inputs (the BioRender graphical abstract, the ChimeraX render of Fig. 1b) go in `figures/source/` (not included), and a missing panel is drawn as a labelled placeholder |
 | `run_all.sh` | rebuilds everything, in order |
 
 ## Setup
@@ -33,20 +33,25 @@ structures (`af3_jobs/`).
 
 ## Data
 
-The processed data (about 12 GB, deposited separately; see the paper's Data availability)
-unpack into this folder's layout:
+The AlphaFold 3 predictions and the data derived from them are not included in this
+repository. The code reads them from this folder's layout:
 
 - **`PLDDTs/`:** per-residue pLDDT matrices, one CSV per variant and WT, with the 125 predictions as columns.
-- **`Ground_Truths/`:** the labels. ClinVar exports, pinned by SHA-256 in `metric_analysis/manifests/clinvar_source_manifest.csv`, and the POLE driver/passenger table (`POLE/combined_pole_labels.csv`, compiled from the POLE/POLD1 driver classification of Dayan et al., Sci. Rep. 2026, doi:10.1038/s41598-026-62150-w; the version used for this study). Also the four assay tables (TP53, KRAS, PTEN, MSH2) and the AlphaMissense scores.
 - **`metric_analysis/structure_metrics/<dataset>/ensemble_aware/cache/`:** C-alpha coordinates of every prediction, superposed with US-align.
-- **`metric_analysis/manifests/`:** the frozen structural inventory and the strict canonical manifest.
+- **`metric_analysis/manifests/`:** the frozen structural inventory, the strict canonical manifest and the ClinVar checksums.
 - **A few analysis inputs**, each named where it is read:
   - the 375-prediction MSH6 WT pool;
   - AF3 ranking scores;
   - WT seed maps;
   - KRAS4B batch files;
-  - the PTEN WT seed extension.
+  - the PTEN WT seed extension;
   - the earlier MSH2 WT pLDDT matrix (backbone N atoms), one of Table S6's comparisons, in `analyses/seeds/seed_pairing/inputs/` (not under `PLDDTs/`, where MSH2's WT search would pick it up).
+
+The labels and scores come from public sources and go in **`Ground_Truths/`**:
+
+- ClinVar exports, checked against the SHA-256 sums in `metric_analysis/manifests/clinvar_source_manifest.csv`;
+- the POLE driver/passenger table (`POLE/combined_pole_labels.csv`), compiled from the POLE/POLD1 driver classification of Dayan et al., Sci. Rep. 2026, doi:10.1038/s41598-026-62150-w;
+- the four assay tables (TP53, KRAS, PTEN, MSH2) and the AlphaMissense scores, cited in the paper's Methods.
 
 The raw AlphaFold 3 output archives are only needed to redo the extraction
 (`run_all.sh extract`) or the Fig. 1b render; point `DRIFT_ARCHIVE_ROOT` at them.
