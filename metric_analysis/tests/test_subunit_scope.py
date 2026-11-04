@@ -4,7 +4,7 @@
 Regression tests for two bugs found while redoing the coordinate metrics in the core-fit
 frame:
 
-- run_d1_ensemble_sweep read the parent's whole pLDDT folder with all its rows. For MSH2
+- the pLDDT ensemble-size sweeps read the parent's whole pLDDT folder with all its rows. For MSH2
   (plddt_dir = PLDDTs/MutS_alpha) that meant both chains of every matrix plus the 42
   superseded MSH6 variants filed there; plddt_row_range and cohort_subunit_token were
   honoured by structure_metrics but not by the sweep's own loader.
@@ -35,7 +35,7 @@ def write_matrix(path, rows_a, rows_b, n_samples=4):
     frame.to_csv(path)
 
 
-class TestSubunitD1Sweep(unittest.TestCase):
+class TestSubunitPlddtScope(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         root = Path(self.tmp.name)
@@ -61,31 +61,27 @@ class TestSubunitD1Sweep(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def test_d1_sweep_reads_only_the_subunit_rows_and_files(self):
-        raw = eap.run_d1_ensemble_sweep(self.cfg, force=True)["raw"]
-        self.assertEqual(sorted(raw.artifact.unique()),
+    def test_scope_reads_only_the_subunit_rows_and_files(self):
+        with eap._plddt_scope(self.cfg):
+            wt, muts = eap.find_plddt_csvs(self.plddt)
+            _, matrix = eap.load_plddt_matrix(wt)
+        self.assertEqual(sorted(p.name.removesuffix("_plddt_values.csv") for p in muts),
                          ["PARENT_MSH2_A10G", "PARENT_MSH2_A11G", "PARENT_MSH2_A20G", "PARENT_MSH2_A30G"])
-        self.assertTrue((raw.n_residues_used == 3).all())
-        d1 = raw.groupby("artifact").d1_mean.mean()
-        self.assertAlmostEqual(d1["PARENT_MSH2_A10G"], 90 / 80 - 1)
-        self.assertAlmostEqual(d1["PARENT_MSH2_A20G"], 0.0)
-        # A11G only changed subunit B's rows, which are out of MSH2's scope
-        self.assertAlmostEqual(d1["PARENT_MSH2_A11G"], 0.0)
+        self.assertEqual(matrix.shape[0], 3)
 
     def test_whole_complex_without_scope_sees_everything(self):
-        """The same call without the subunit keys reads both chains and every file (the old behaviour)."""
+        """The same calls without the subunit keys read both chains and every file (the old behaviour)."""
         cfg = {k: v for k, v in self.cfg.items() if k not in ("plddt_row_range", "cohort_subunit_token")}
-        raw = eap.run_d1_ensemble_sweep(cfg, force=True)["raw"]
-        self.assertIn("PARENT_MSH6_A11G", set(raw.artifact))
-        self.assertTrue((raw.n_residues_used == 6).all())
+        with eap._plddt_scope(cfg):
+            wt, muts = eap.find_plddt_csvs(self.plddt)
+            _, matrix = eap.load_plddt_matrix(wt)
+        self.assertIn("PARENT_MSH6_A11G_plddt_values.csv", {p.name for p in muts})
+        self.assertEqual(matrix.shape[0], 6)
 
-    def test_ks_sweep_honours_the_scope(self):
-        raw = eap.run_plddt_ks_ensemble_sweep(self.cfg, force=True)["raw"]
+    def test_distribution_sweep_honours_the_scope(self):
+        raw = eap.run_plddt_distribution_ensemble_sweep(self.cfg, force=True)["raw"]
         self.assertNotIn("PARENT_MSH6_A11G", set(raw.artifact))
-        self.assertTrue((raw.n_residues_used == 3).all())
-        ks = raw.groupby("artifact").plddt_ks_mean.mean()
-        self.assertAlmostEqual(ks["PARENT_MSH2_A10G"], 1.0)
-        self.assertAlmostEqual(ks["PARENT_MSH2_A11G"], 0.0)
+        self.assertIn("PARENT_MSH2_A10G", set(raw.artifact))
 
     def test_several_wt_csvs_need_wt_artifact(self):
         write_matrix(self.plddt / "PARENT_again_WT_plddt_values.csv", 70, 70)

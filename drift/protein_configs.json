@@ -1,8 +1,8 @@
 {
   "TP53": {
     "enabled": false,
-    "_status": "No binary label since 2026-10-13: the assay is a continuous target only (analyses/continuous/continuous_functional), never thresholded into driver/passenger. Disabled for the binary pipeline; load_continuous_configs() reads its d1 block.",
-    "d1": {
+    "_status": "No binary label since 2026-10-13: the assay is a continuous target only (analyses/continuous/continuous_functional), never thresholded into driver/passenger. Disabled for the binary pipeline; load_continuous_configs() reads its structures block.",
+    "structures": {
       "mut": "P53",
       "read_root": "PLDDTs/TP53",
       "chain_ids": [
@@ -25,7 +25,7 @@
   },
   "POLE": {
     "_wt_reference_note": "Pinned 2026-10-18 to the 204-residue construct reference used by the strict manifest, WT controls and coordinate analyses. Do not pool POLE_WT or POLE_again_WT: N must be the total predictions per side.",
-    "d1": {
+    "structures": {
       "mut": "POLE",
       "read_root": "PLDDTs/POLE",
       "chain_ids": [
@@ -59,9 +59,9 @@
   "MutSalpha": {
     "enabled": false,
     "_status": "DISABLED 2026-09-07, superseded by the MSH2 and MSH6 entries. The structures, labels and AlphaMissense data are unchanged and still correct; this entry is retained for provenance and for reproducing the merged descriptor.",
-    "_why_disabled": "load_protein_configs() is iterated WHOLESALE -- run.py passes every config to build_d1_table with no dataset filter, and build_configured_external_gt loops all of them. Left enabled alongside MSH2/MSH6 it put the same 147 variants into the D1 table twice (151 + 109 + 42 = 302 rows for 147 variants) under two identities, which inflates pooled counts and, worse, leaks: holding out MSH2 would leave the same MSH2 variants in training as MutSalpha rows. Unlike metric_analysis/protein_configs.json -- where the MutS_alpha entry MUST stay, because the structure-metrics pipeline still runs on it and MSH2/MSH6 read its distribution summary -- nothing here needs it.",
+    "_why_disabled": "load_protein_configs() is iterated WHOLESALE -- run.py passes every config to build_variant_table with no dataset filter, and build_configured_external_gt loops all of them. Left enabled alongside MSH2/MSH6 it put the same 147 variants into the variant table twice (151 + 109 + 42 = 302 rows for 147 variants) under two identities, which inflates pooled counts and, worse, leaks: holding out MSH2 would leave the same MSH2 variants in training as MutSalpha rows. Unlike metric_analysis/protein_configs.json -- where the MutS_alpha entry MUST stay, because the structure-metrics pipeline still runs on it and MSH2/MSH6 read its distribution summary -- nothing here needs it.",
     "_to_reproduce_merged": "set enabled to true and disable MSH2 and MSH6, so the two layouts are never active at once.",
-    "d1": {
+    "structures": {
       "mut": "MutS_alpha",
       "read_root": "PLDDTs/MutS_alpha",
       "chain_ids": [
@@ -93,10 +93,10 @@
   },
   "KRAS": {
     "enabled": false,
-    "_status": "No binary label since 2026-10-13: the assay is a continuous target only (analyses/continuous/continuous_functional), never thresholded into driver/passenger. Disabled for the binary pipeline; load_continuous_configs() reads its d1 block.",
+    "_status": "No binary label since 2026-10-13: the assay is a continuous target only (analyses/continuous/continuous_functional), never thresholded into driver/passenger. Disabled for the binary pipeline; load_continuous_configs() reads its structures block.",
     "isoform": "KRAS4B (UniProt P01116-2, ENST00000311936, 188 aa)",
     "_isoform_note": "Switched from KRAS4A to KRAS4B on 2026-10-13: structures (PLDDTs/KRAS, 979 mutants + WT), AlphaMissense (afm_KRAS_predictions.tsv) and the DMS screen are all 4B. The 4A data live in PLDDTs/KRAS4A_legacy and Ground_Truths/AlphaMissense/legacy_4A. This non-underscore field also changes the cache fingerprint so no 4A-era cache is reused.",
-    "d1": {
+    "structures": {
       "mut": "KRAS",
       "read_root": "PLDDTs/KRAS",
       "chain_ids": [
@@ -126,7 +126,7 @@
       "DONE - aligned the VHL label route with metric_analysis at 105/19 on the strict canonical cohort.",
       "VHL is an AlphaFold3 complex: chain A is VHL and is the only configured scoring chain."
     ],
-    "d1": {
+    "structures": {
       "mut": "VHL",
       "read_root": "PLDDTs/VHL",
       "chain_ids": [
@@ -156,7 +156,7 @@
       "DONE - selected transcript-attributed ClinVar labels for the current DRIFT run.",
       "DONE - confirmed label-route alignment with metric_analysis; disclose the 248/9 class imbalance in reported results."
     ],
-    "d1": {
+    "structures": {
       "mut": "PTEN",
       "read_root": "PLDDTs/PTEN",
       "chain_ids": [
@@ -177,9 +177,9 @@
   "MSH2": {
     "enabled": true,
     "_status": "ENABLED. MSH2 is one subunit of the modelled MutSalpha heterodimer, split out as its own dataset (2026-09-07). Structures, chain and wild-type reference are shared with MSH6; the descriptor is restricted to MSH2's own residue rows.",
-    "_split_rationale": "The merged MutSalpha dataset averaged every descriptor over all 2,294 residues of MSH2+MSH6 regardless of which subunit carried the mutation, so 59% of an MSH2 variant's D1 and 41% of an MSH6 variant's came from the unmutated partner. Merged AUC 0.701 was an average of two unlike datasets (MSH2 0.822, MSH6 0.625 under the merged descriptor). See experiments/mutsalpha_subunit_split/.",
+    "_split_rationale": "The merged MutSalpha dataset averaged every descriptor over all 2,294 residues of MSH2+MSH6 regardless of which subunit carried the mutation, so 59% of an MSH2 variant's descriptor and 41% of an MSH6 variant's came from the unmutated partner. Merged AUC 0.701 was an average of two unlike datasets (MSH2 0.822, MSH6 0.625 under the merged descriptor). See experiments/mutsalpha_subunit_split/.",
     "_shared_wild_type": "MutS_alpha_WT_plddt_values.csv is the single wild-type ensemble for both datasets: one prediction of the complex represents both native subunits. Each dataset reads its own rows out of it.",
-    "d1": {
+    "structures": {
       "mut": "MutS_alpha",
       "read_root": "PLDDTs/MutS_alpha",
       "chain_ids": [
@@ -205,9 +205,9 @@
   "MSH6": {
     "enabled": true,
     "_status": "ENABLED. MSH6 is one subunit of the modelled MutSalpha heterodimer, split out as its own dataset (2026-09-07); the descriptor is restricted to MSH6's own residue rows. Since 2026-10-12 it reads the G:T-mismatch rerun (MutS_alpha_MSH6_GT), which has its own WT folded on the same duplex; MSH2 keeps the original complex and WT.",
-    "_split_rationale": "The merged MutSalpha dataset averaged every descriptor over all 2,294 residues of MSH2+MSH6 regardless of which subunit carried the mutation, so 59% of an MSH2 variant's D1 and 41% of an MSH6 variant's came from the unmutated partner. Merged AUC 0.701 was an average of two unlike datasets (MSH2 0.822, MSH6 0.625 under the merged descriptor). See experiments/mutsalpha_subunit_split/.",
+    "_split_rationale": "The merged MutSalpha dataset averaged every descriptor over all 2,294 residues of MSH2+MSH6 regardless of which subunit carried the mutation, so 59% of an MSH2 variant's descriptor and 41% of an MSH6 variant's came from the unmutated partner. Merged AUC 0.701 was an average of two unlike datasets (MSH2 0.822, MSH6 0.625 under the merged descriptor). See experiments/mutsalpha_subunit_split/.",
     "_shared_wild_type": "MutS_alpha_MSH6_GT_WT_plddt_values.csv is MSH6's wild type: the same MSH2-MSH6 complex folded on the 21/21-nt G:T duplex its variants use. Until 2026-10-12 MSH6 shared MSH2's MutS_alpha_WT, whose 21/20-nt duplex did not match the old MSH6 batch's 136/137-nt one.",
-    "d1": {
+    "structures": {
       "mut": "MutS_alpha_MSH6_GT",
       "read_root": "PLDDTs/MutS_alpha_MSH6_GT",
       "chain_ids": [
@@ -232,7 +232,7 @@
   "PIK3CA": {
     "enabled": true,
     "_status": "ENABLED 2026-10-12 as an evaluation dataset. PI3Kalpha heterodimer: p110alpha (chain A, 1068 residues, mutated) + the p85alpha niSH2 fragment (chain B); the pLDDT matrices hold chain A only. Labels are transcript-matched ClinVar germline pathogenic/benign (84 D / 7 P): mostly PROS overgrowth and cancer hotspots, not somatic driver ground truth.",
-    "d1": {
+    "structures": {
       "mut": "PIK3CA",
       "read_root": "PLDDTs/PIK3CA",
       "chain_ids": [

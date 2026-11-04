@@ -1,7 +1,7 @@
-"""Load and validate the protein-specific inputs used by DRIFT fusion.
+"""Load and validate the protein-specific inputs used by DRIFT.
 
 Adding a protein should start in ``protein_configs.json``.  Each enabled entry
-must define its D1 sources and one explicit label mode; the loader rejects
+must define its structure sources and one explicit label mode; the loader rejects
 incomplete entries instead of silently assigning scientifically invalid labels.
 """
 
@@ -43,16 +43,16 @@ def _resolve_path(value: str | Path) -> Path:
 
 
 def _validate(protein: str, cfg: dict) -> None:
-    missing_sections = [name for name in ("d1", "label") if name not in cfg]
+    missing_sections = [name for name in ("structures", "label") if name not in cfg]
     if missing_sections:
         raise ValueError(
             f"Protein {protein!r} is missing required section(s): {missing_sections}"
         )
 
-    d1 = cfg["d1"]
-    missing_d1 = [name for name in ("mut", "read_root", "chain_ids") if name not in d1]
-    if missing_d1:
-        raise ValueError(f"Protein {protein!r} D1 config is missing: {missing_d1}")
+    structures = cfg["structures"]
+    missing_keys = [name for name in ("mut", "read_root", "chain_ids") if name not in structures]
+    if missing_keys:
+        raise ValueError(f"Protein {protein!r} structures config is missing: {missing_keys}")
 
     mode = cfg["label"].get("mode")
     if mode not in SUPPORTED_LABEL_MODES:
@@ -72,7 +72,7 @@ def _prepare(protein: str, raw_cfg: dict) -> dict:
     """Validate one entry and resolve its paths against the repository."""
     cfg = deepcopy(raw_cfg)
     _validate(protein, cfg)
-    for section_name in ("d1", "label", "afm"):
+    for section_name in ("structures", "label", "afm"):
         section = cfg.get(section_name, {})
         for key in _PATH_KEYS:
             if key in section:
@@ -117,7 +117,7 @@ def load_continuous_configs(
 ) -> dict[str, dict]:
     """Configs for the continuous functional analyses, whatever their binary status.
 
-    TP53 and KRAS are disabled for the binary pipeline (no label) but their D1
+    TP53 and KRAS are disabled for the binary pipeline (no label) but their structure
     sources still define how their descriptors are computed; PTEN and MSH2 are
     enabled binary datasets that ALSO have an assay. Same validation and path
     resolution as load_protein_configs, so descriptors match it exactly.
@@ -130,16 +130,16 @@ def load_continuous_configs(
     return {protein: _prepare(protein, raw[protein]) for protein in proteins}
 
 
-def build_d1_runtime_configs(protein_configs: dict[str, dict]) -> dict[str, dict]:
-    """Extract the runtime-facing D1 dictionary without label/AFM metadata."""
-    return {protein: deepcopy(cfg["d1"]) for protein, cfg in protein_configs.items()}
+def build_structure_configs(protein_configs: dict[str, dict]) -> dict[str, dict]:
+    """Each protein's structure-source section, without label/AFM metadata."""
+    return {protein: deepcopy(cfg["structures"]) for protein, cfg in protein_configs.items()}
 
 
 def protein_config_fingerprint(path: str | Path = CONFIG_PATH) -> str:
     """Hash scientific config fields while ignoring underscore-prefixed notes.
 
     ``_status``/``_todo`` fields are human documentation.  Including them in a
-    data-cache key made prose-only edits trigger expensive D1 recomputation.
+    data-cache key made prose-only edits trigger an expensive cache rebuild.
     Active fields such as paths, label modes, chain IDs, and ``enabled`` remain
     covered by the fingerprint.
     """

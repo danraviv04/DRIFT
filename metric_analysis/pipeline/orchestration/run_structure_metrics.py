@@ -13,8 +13,8 @@ Stages, in dependency order:
   ensemble_aware      coordinate descriptors (RMSF, RMSD, positional KS) by ensemble size,
                       from the coordinate cache (the WT rigid-core frame by default)
 
-The DRIFT release keeps only these three. The notebooks' other stages (D1 and pLDDT-ratio
-profiles, profile KS, LDA discrimination, RMSF/DNA batches) fed no result of the paper.
+The DRIFT release keeps only these three; the notebooks' other stages fed no result of
+the paper.
 
 Usage
 -----
@@ -40,6 +40,10 @@ import pandas as pd
 
 from metric_analysis.pipeline.library import structure_metrics as sm
 from metric_analysis.pipeline.library import ensemble_aware_pipeline as eap
+from metric_analysis.pipeline.library.plddt_distribution import (
+    plot_plddt_distribution_profile_by_class,
+    plot_plddt_distribution_summary,
+)
 from metric_analysis.pipeline.config.protein_config import (
     get_protein_config,
     supported_proteins,
@@ -181,38 +185,25 @@ def stage_plddt_distribution(cfg, sm_config, state, force=False):
     summary_df["label"] = summary_df["mutation_type"].map(
         {"Driver": 1, "Passenger": 0}
     )
-    consistency = pd.to_numeric(
-        summary_df.get("d1_consistency_abs_error"), errors="coerce"
-    )
-    if consistency.notna().any() and float(consistency.max()) > 1e-10:
-        raise ValueError(
-            f"[{prefix}] distribution decomposition does not reproduce D1: "
-            f"max absolute error={float(consistency.max()):.3g}"
-        )
 
     out_dir.mkdir(parents=True, exist_ok=True)
     summary_df.to_csv(summary_path, index=False)
     residue_df.to_csv(residue_path, index=False, compression="gzip")
 
-    profile_result = sm.plot_plddt_distribution_profile_by_class(
+    profile_result = plot_plddt_distribution_profile_by_class(
         residue_df,
         summary_df,
         residue_start=cfg.get("plddt_residue_start"),
         hotspot_range=cfg.get("hotspot_range"),
         out_path=out_dir / f"{prefix}_plddt_distribution_profile_by_class.png",
     )
-    distribution_result = sm.plot_plddt_distribution_summary(
+    distribution_result = plot_plddt_distribution_summary(
         summary_df,
         dataset_name=prefix,
         out_path=out_dir / f"{prefix}_plddt_distribution_by_class.png",
     )
-    d1_result = sm.plot_plddt_distribution_vs_d1(
-        summary_df,
-        dataset_name=prefix,
-        out_path=out_dir / f"{prefix}_plddt_distribution_vs_d1.png",
-    )
 
-    # Evaluate old and new metrics on one complete-case cohort so AUC changes
+    # Evaluate the metrics on one complete-case cohort so AUC differences
     # cannot be caused by a different set of variants.
     comparison = summary_df.copy()
     ks_path = out_dir / f"{prefix}_plddt_ks_summary.csv"
@@ -227,7 +218,6 @@ def stage_plddt_distribution(cfg, sm_config, state, force=False):
                 how="left",
             )
     metric_specs = [
-        ("d1_mean", "D1 (mean shift)"),
         ("plddt_ks_mean", "KS"),
         ("plddt_w1_unit_mean", "Wasserstein-1"),
         (
@@ -256,9 +246,6 @@ def stage_plddt_distribution(cfg, sm_config, state, force=False):
             "metric": label,
             "cohort": "common_complete_case",
             **eap.compare_driver_passenger(evaluation, col),
-            "spearman_vs_d1": float(
-                evaluation[col].corr(evaluation["d1_mean"], method="spearman")
-            ),
         })
     performance_df = pd.DataFrame(performance_rows)
     performance_df.to_csv(performance_path, index=False)
@@ -269,13 +256,13 @@ def stage_plddt_distribution(cfg, sm_config, state, force=False):
         auc = pd.to_numeric(
             performance_df["roc_auc_driver_high"], errors="coerce"
         ).to_numpy(float)
-        colors = ["#6c757d", "#8d99ae"] + ["#2a9d8f"] * max(len(x) - 2, 0)
+        colors = ["#8d99ae"] + ["#2a9d8f"] * max(len(x) - 1, 0)
         ax.bar(x, auc, color=colors[:len(x)], edgecolor="black", linewidth=0.5)
         ax.axhline(0.5, color="black", linestyle="--", linewidth=1)
         ax.set_ylim(0.0, 1.0)
         ax.set_xticks(x, performance_df["metric"], rotation=25, ha="right")
         ax.set_ylabel("ROC-AUC (driver-high, matched cohort)")
-        ax.set_title(f"{prefix}: D1, KS, and full-distribution metrics")
+        ax.set_title(f"{prefix}: full-distribution metrics")
         ax.grid(axis="y", alpha=0.25)
         for position, value in zip(x, auc):
             if np.isfinite(value):
@@ -302,7 +289,7 @@ def stage_plddt_distribution(cfg, sm_config, state, force=False):
     print(
         f"  pLDDT distribution: {tested}/{len(summary_df)} variants tested; "
         f"{len(residue_df)} residue rows; wrote compressed residue table, "
-        "summary/performance tables, 4 figures, and ensemble-size sweep"
+        "summary/performance tables, 3 figures, and ensemble-size sweep"
     )
     state["plddt_distribution_summary_df"] = summary_df
     state["plddt_distribution_residue_df"] = residue_df
@@ -312,7 +299,6 @@ def stage_plddt_distribution(cfg, sm_config, state, force=False):
         "performance_df": performance_df,
         "profile_result": profile_result,
         "distribution_result": distribution_result,
-        "d1_result": d1_result,
         "auc_sweep_result": auc_sweep_result,
     }
 

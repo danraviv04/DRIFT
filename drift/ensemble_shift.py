@@ -1,9 +1,9 @@
 """Ensemble-shift descriptors computed from the per-structure pLDDT CSVs.
 
-D1 collapses each conformational ensemble to a single mean ratio, discarding the
-distribution that motivated generating the ensemble in the first place. This
-module recovers that distributional information -- from the *same* residue x
-structure pLDDT matrices D1 reads -- and exposes it as per-variant features:
+A per-residue mean collapses each conformational ensemble to one number, discarding
+the distribution that motivated generating the ensemble in the first place. This
+module compares the WT and mutant distributions -- from the residue x structure
+pLDDT matrices -- and exposes the comparison as per-variant features:
 
     plddt_spread_ratio : mean-over-residues[ std_over_structures(MUT) ]
                        / mean-over-residues[ std_over_structures(WT) ]
@@ -24,18 +24,15 @@ structure pLDDT matrices D1 reads -- and exposes it as per-variant features:
         distribution. This is `ks_raw` in the canonical ks_meanfree analysis.
 
     plddt_ks_centred   : same, after centring each ensemble by its own
-        per-residue mean. Mean-free, so it measures shape/spread only and is
-        close to orthogonal to D1 (rho ~0.15 on MSH2 vs ~0.85 for the raw
-        form). `ks_centred` in the canonical analysis.
+        per-residue mean. Mean-free, so it measures shape/spread only.
+        `ks_centred` in the canonical analysis.
 
-Structure sampling reuses the D1 runtime's deterministic sampler with the SAME
-sampling keys, so the structures drawn here match the ones D1 used for a given
-(size, seed). Features are keyed by (gene, mutation) to merge onto the labeled
+Structure sampling uses structure_draws' deterministic sampler and sampling keys,
+so a given (variant, size, seed) always draws the same structures. Features are keyed by (gene, mutation) to merge onto the labeled
 dataset. RMSF is intentionally absent: it is not computable from pLDDT alone.
 """
 from __future__ import annotations
 
-import glob
 import re
 from pathlib import Path
 
@@ -44,14 +41,14 @@ import pandas as pd
 
 from .metrics import residue_ks_statistics
 
-from drift import structure_draws as d1_runtime
+from drift import structure_draws
 
-sample_items_nested = d1_runtime.sample_items_nested
-select_structure_columns = d1_runtime.select_structure_columns
-column_confidence_scores = d1_runtime.column_confidence_scores
-SamplingPolicy = d1_runtime.SamplingPolicy
-canonical_gene = d1_runtime.canonical_gene
-normalize_mutation = d1_runtime.normalize_mutation
+sample_items_nested = structure_draws.sample_items_nested
+select_structure_columns = structure_draws.select_structure_columns
+column_confidence_scores = structure_draws.column_confidence_scores
+SamplingPolicy = structure_draws.SamplingPolicy
+canonical_gene = structure_draws.canonical_gene
+normalize_mutation = structure_draws.normalize_mutation
 
 try:  # scipy ships with sklearn; keep a manual fallback so this never hard-fails.
     from scipy.stats import wasserstein_distance as _scipy_w1
@@ -85,7 +82,7 @@ def _read_plddt_matrix(csv_path, max_structures, *, seed, key, policy=None,
     of collapsing to a per-residue mean.
     """
     df = pd.read_csv(csv_path, low_memory=False)
-    d1_runtime.validate_plddt_csv_frame(df, expected_residues, max_structures,
+    structure_draws.validate_plddt_csv_frame(df, expected_residues, max_structures,
                                       context=csv_path)
     if df.empty:
         return None
@@ -152,10 +149,7 @@ def _residue_ks_summaries(wt_mat, mut_mat):
 
     residueKS keeps the mean shift; the centred variant removes each ensemble's
     own per-residue mean first, so it is mean-free and measures shape/spread
-    only. On the canonical cohort residueKS correlates with D1 up to rho=0.97
-    while the centred form drops to rho=0.15, which is the whole reason for
-    carrying both: one restates D1 with a distributional instrument, the other
-    is close to orthogonal to it.
+    only.
 
     Residues with any non-finite value are dropped rather than imputed, matching
     how the profile features already filter.
@@ -176,9 +170,9 @@ def _residue_ks_summaries(wt_mat, mut_mat):
 
 def _wt_reference(read_root, wt_glob, mut, max_structures, seed, policy=None,
                   selection_out=None, expected_sources=None, expected_residues=None):
-    """Pooled WT residues x structures matrix (sampled to match D1's WT draws)."""
+    """Pooled WT residues x structures matrix, sampled for one (size, seed)."""
     policy = SamplingPolicy.coerce(policy)
-    wt_csvs = d1_runtime.discover_wt_csv_sources(
+    wt_csvs = structure_draws.discover_wt_csv_sources(
         read_root, wt_glob, expected_sources=expected_sources,
     )
     if not wt_csvs:
@@ -210,14 +204,14 @@ def _apply_row_range(frame, row_range, context):
     """Restrict a residues x structures matrix to a half-open row block.
 
     MSH2 and MSH6 are two datasets carved out of ONE MutS_alpha prediction set
-    by residue range. D1 honours `plddt_row_range`; these descriptors did not,
-    so every ensemble-shift statistic for both subunits was computed over the
+    by residue range. The variant table honours `plddt_row_range`; these descriptors
+    once did not, so every ensemble-shift statistic for both subunits was computed over the
     whole 2,294-residue complex, including the partner subunit. A mutation may
     perturb its partner, but that is outside the defined subunit descriptor.
 
     Filtering is by NUMERIC INDEX LABEL, matching
-    structure_draws._restrict_series_to_row_range, so D1 and the shift
-    descriptors cover identical residues. Positional slicing would silently
+    structure_draws._restrict_series_to_row_range, so the variant table and the
+    shift descriptors cover identical residues. Positional slicing would silently
     diverge wherever a residue row is missing.
     """
     if row_range is None:
@@ -243,8 +237,8 @@ def build_ensemble_shift_features(runtime_configs, *, max_structures_per_variant
                                   policy=None):
     """One row per (gene, mutation) with the ensemble-shift descriptors.
 
-    `runtime_configs` should be the same dict D1 uses (core.D1_RUNTIME_CONFIGS)
-    so mut prefixes, roots, and globs match. Duplicate (gene, mutation) keys
+    `runtime_configs` should be core.STRUCTURE_CONFIGS (each protein's structure
+    sources), so mut prefixes, roots, and globs match. Duplicate (gene, mutation) keys
     (e.g. MutSalpha subunits collapsing to a shared residue label) are averaged.
     """
     policy = SamplingPolicy.coerce(policy)
@@ -278,10 +272,10 @@ def build_ensemble_shift_features(runtime_configs, *, max_structures_per_variant
                   f"[{row_range[0]}, {row_range[1]}) -> {len(wt_mat)} residues")
         wt_spread, wt_profile = _spread_and_profile(wt_mat)
 
-        mut_csvs = d1_runtime.discover_mut_csv_sources(
+        mut_csvs = structure_draws.discover_mut_csv_sources(
             read_root, mut_glob, cfg.get("mut_csv_replacements"))
         mut_csvs = [p for p in mut_csvs if "WT" not in Path(p).name.upper()]
-        # Same cross-dataset-leakage guard as build_d1_table: require the gene's
+        # Same cross-dataset-leakage guard as build_variant_table: require the gene's
         # own mutation prefix on the filename.
         mut_csvs = [
             p for p in mut_csvs
@@ -294,7 +288,7 @@ def build_ensemble_shift_features(runtime_configs, *, max_structures_per_variant
             if mutation is None:
                 continue
             m = _read_plddt_matrix(
-                src, max_structures_per_variant, seed=seed, key=d1_runtime.source_draw_key("mut", src),
+                src, max_structures_per_variant, seed=seed, key=structure_draws.source_draw_key("mut", src),
                 policy=policy, preferred_order=wt_selected or None,
                 expected_residues=cfg.get("plddt_expected_residues"),
             )
@@ -334,8 +328,8 @@ def build_ensemble_shift_features(runtime_configs, *, max_structures_per_variant
     if not rows:
         return pd.DataFrame(columns=["gene", "mutation", *FEATURE_COLUMNS])
     out = pd.DataFrame(rows)
-    # Collapse any duplicate (gene, mutation) to one row, matching D1's one-row
-    # -per-variant aggregation (mean is order-independent, unlike keep="first").
+    # Collapse any duplicate (gene, mutation) to one row, one row per variant
+    # (mean is order-independent, unlike keep="first").
     out = (
         out.groupby(["gene", "mutation"], as_index=False)[FEATURE_COLUMNS]
         .mean()

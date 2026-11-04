@@ -1,10 +1,10 @@
-"""Structure draws and pLDDT matrix reading for DRIFT (formerly d1_calc_fast_runtime.py).
+"""Structure draws and pLDDT matrix reading for DRIFT.
 
 Every KS value goes through here: which predictions each (variant, size, seed) draw
 uses (SamplingPolicy, select_structure_columns, source_draw_key), where the pLDDT
 matrices are found (discover_wt_csv_sources, discover_mut_csv_sources) and how they
-are read. build_d1_table also assembles the labelled dataset the score caches hold;
-the D1 descriptor it computes on the way is not used by the paper.
+are read. build_variant_table lists the variants a draw can score, which is the row
+set of the score caches.
 """
 from __future__ import annotations
 
@@ -72,7 +72,7 @@ SELECTION_RULES = ("random", "random_pinned", "top_confidence")
 
 @dataclass(frozen=True)
 class SamplingPolicy:
-    """How the N structures backing one D1 value are chosen from the pool.
+    """How the N structures behind one variant's descriptors are chosen from the pool.
 
     mode
         ``nested``      the default. One seeded permutation per (variant, seed);
@@ -105,10 +105,9 @@ class SamplingPolicy:
                             computed once on the WT ensemble and the same
                             structure identities are then used for the mutant.
                             Ranking WT and mutant independently would select on
-                            the same quantity that appears in the numerator and
-                            the denominator of D1, inflating both toward their
-                            maxima and shrinking |ratio - 1| by
-                            regression-to-the-max. Only defined for the
+                            the quantity being compared, pushing both sides
+                            toward their maxima and shrinking the WT-mutant
+                            difference by regression-to-the-max. Only defined for the
                             per-structure pLDDT CSV route.
 
     A default policy (``nested``/``random``) leaves every subseed key untouched,
@@ -283,7 +282,7 @@ def select_structure_columns(
 
     ``preferred_order`` carries the wild-type ranking into a mutant read so that
     ``top_confidence`` selects the same structure identities on both sides of
-    the D1 ratio. Columns named in it are taken first (in its order); anything
+    the WT-mutant comparison. Columns named in it are taken first (in its order); anything
     still needed is topped up from this matrix's own ranking, so a mutant with
     extra structures, or with column names that do not match WT at all, still
     yields a full sample instead of silently returning fewer than N.
@@ -391,18 +390,6 @@ def mut_vec_from_dict(mut_dict: dict, common_keys: list) -> np.ndarray:
         dtype=np.float32,
         count=len(common_keys),
     )
-
-
-def d1_from_mut_mean_vec(mut_mean_vec: np.ndarray, wt_ref: np.ndarray) -> np.ndarray:
-    mask = ~np.isnan(mut_mean_vec)
-    if not np.any(mask):
-        return np.array([], dtype=np.float32)
-    wt = wt_ref[mask]
-    mut = mut_mean_vec[mask]
-    ratio = np.divide(
-        mut, wt, out=np.zeros_like(mut, dtype=np.float32), where=(wt != 0)
-    )
-    return np.abs(ratio - 1.0).astype(np.float32)
 
 
 def discover_wt_csv_sources(read_root, wt_csv_glob="*WT*plddt_values.csv", *,
@@ -677,25 +664,22 @@ def scan_plddt_sources(runtime_configs: dict, *, max_examples: int = 3) -> pd.Da
     return pd.DataFrame(rows).sort_values("gene").reset_index(drop=True)
 
 
-def build_d1_table(
+def build_variant_table(
     runtime_configs: dict,
     *,
     max_structures_per_variant: int | None,
     random_seed: int,
-    ratio_mode: str = "ratio_of_means",
     policy: SamplingPolicy | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    if ratio_mode != "ratio_of_means":
-        raise ValueError(
-            "This runtime pipeline currently supports only 'ratio_of_means'."
-        )
+    """One row per variant the draw can score (some residue with valid mutant and WT
+    pLDDT), and a per-dataset audit of what was found and used."""
     if max_structures_per_variant is not None and int(max_structures_per_variant) <= 0:
         raise ValueError(
             "max_structures_per_variant must be None or a positive integer."
         )
     policy = SamplingPolicy.coerce(policy)
 
-    d1_rows: list[dict[str, Any]] = []
+    variant_rows: list[dict[str, Any]] = []
     audit_rows: list[dict[str, Any]] = []
 
     for gene_key, cfg in runtime_configs.items():
@@ -828,9 +812,10 @@ def build_d1_table(
                     }
                 )
                 continue
-            # One filter here restricts the whole descriptor: every mutant row is
+            # One filter here restricts the whole variant: every mutant row is
             # built by intersecting its own index against this reference, so
-            # narrowing the reference narrows D1 without touching the row builder.
+            # narrowing the reference narrows its residues without touching the
+            # row builder.
             if row_range is not None:
                 wt_ref_series = _restrict_series_to_row_range(
                     wt_ref_series, row_range, context=f"{gene} WT reference"
@@ -984,7 +969,7 @@ def build_d1_table(
             ]
             source_mode = "dir"
 
-        start_rows = len(d1_rows)
+        start_rows = len(variant_rows)
         error_count = 0
         actual_mutant_structures: list[int] = []
 
@@ -1080,9 +1065,9 @@ def build_d1_table(
                         row["mutation"] = f"{tok}_{row['mutation']}"
                         break
             actual_mutant_structures.append(int(row["Num_Structures"]))
-            d1_rows.append(row)
+            variant_rows.append(row)
 
-        rows_kept = len(d1_rows) - start_rows
+        rows_kept = len(variant_rows) - start_rows
         audit_rows.append(
             {
                 "gene": gene,
@@ -1094,7 +1079,6 @@ def build_d1_table(
                 "wt_structures": int(wt_count),
                 "rows_kept": int(rows_kept),
                 "errors": int(error_count),
-                "ratio_mode": ratio_mode,
                 "max_structures_per_variant": max_structures_per_variant,
                 "seed": int(random_seed),
                 "mean_mut_structures_used": (
@@ -1111,15 +1095,15 @@ def build_d1_table(
             }
         )
 
-    if not d1_rows:
+    if not variant_rows:
         audit_df = pd.DataFrame(audit_rows)
         raise ValueError(
-            "No usable D1 rows produced from runtime structure pipeline.\n"
+            "No usable variant rows produced from runtime structure pipeline.\n"
             + (audit_df.to_string(index=False) if not audit_df.empty else "")
         )
 
-    out = pd.DataFrame(d1_rows)
-    out = out.dropna(subset=["gene", "mutation", "d1_score"]).copy()
+    out = pd.DataFrame(variant_rows)
+    out = out.dropna(subset=["gene", "mutation"]).copy()
     out = (
         out.sort_values(["gene", "mutation", "source_file"])
         .drop_duplicates(["gene", "mutation"], keep="first")
@@ -1133,61 +1117,24 @@ def build_d1_table(
     return out, audit_df
 
 
-def aggregate_d1_rows_to_mutation_level(
-    d1_rows_df: pd.DataFrame,
-    *,
-    ratio_mode: str = "ratio_of_means",
-) -> pd.DataFrame:
-    """Aggregate runtime D1 rows to one row per (gene, mutation).
+def variant_keys(variant_rows_df: pd.DataFrame) -> pd.DataFrame:
+    """The (gene, mutation) keys of build_variant_table's rows, normalised.
 
-    This helper is kept for backward compatibility with notebooks that import
-    and call it explicitly.
+    Genes and mutations go through canonical_gene / normalize_mutation, so a
+    subunit-tagged mutation ("MSH2_A256G") becomes its plain code; keys are unique
+    and sorted.
     """
-    if ratio_mode != "ratio_of_means":
-        raise ValueError(
-            "This runtime pipeline currently supports only 'ratio_of_means'."
-        )
-
-    if d1_rows_df is None or len(d1_rows_df) == 0:
-        return pd.DataFrame(columns=["gene", "mutation", "d1_score", "label"])
-
-    work = d1_rows_df.copy()
-    required = {"gene", "mutation", "d1_score"}
-    missing = sorted(required.difference(work.columns))
-    if missing:
-        raise ValueError(f"d1_rows_df is missing required columns: {missing}")
-
-    work["gene"] = work["gene"].map(canonical_gene)
-    work["mutation"] = work["mutation"].map(normalize_mutation)
-    work["d1_score"] = pd.to_numeric(work["d1_score"], errors="coerce")
-    work = work.dropna(subset=["gene", "mutation", "d1_score"]).copy()
-    agg_spec: dict[str, str] = {"d1_score": "mean"}
-    optional_agg = [
-        ("Variant", "first"),
-        ("d1_score_col", "first"),
-        ("Sum_D1", "sum"),
-        ("Num_Residues", "sum"),
-        ("Num_Structures", "sum"),
-        ("label", "max"),
-        ("label_col", "first"),
-        ("source_file", "first"),
-        ("score_priority", "min"),
-        ("n_replicates", "sum"),
-        ("is_labeled", "max"),
-        ("source_kind", "first"),
-    ]
-    for col, agg_fn in optional_agg:
-        if col in work.columns:
-            agg_spec[col] = agg_fn
-
-    out = work.groupby(["gene", "mutation"], as_index=False).agg(agg_spec)
-    if "label" not in out.columns:
-        out["label"] = -1
-    else:
-        out["label"] = pd.to_numeric(out["label"], errors="coerce").fillna(-1)
-        out["label"] = out["label"].astype(int)
-
-    return out.sort_values(["gene", "mutation"]).reset_index(drop=True)
+    if variant_rows_df is None or len(variant_rows_df) == 0:
+        return pd.DataFrame(columns=["gene", "mutation"])
+    keys = variant_rows_df[["gene", "mutation"]].copy()
+    keys["gene"] = keys["gene"].map(canonical_gene)
+    keys["mutation"] = keys["mutation"].map(normalize_mutation)
+    return (
+        keys.dropna()
+        .drop_duplicates()
+        .sort_values(["gene", "mutation"])
+        .reset_index(drop=True)
+    )
 
 
 def _build_variant_row_from_cifs(
@@ -1225,8 +1172,8 @@ def _build_variant_row_from_cifs(
     mut_mean_vec[valid_mask] = (mut_sum[valid_mask] / mut_count[valid_mask]).astype(
         np.float32
     )
-    d1 = d1_from_mut_mean_vec(mut_mean_vec, wt_ref)
-    if d1.size == 0:
+    valid = ~np.isnan(mut_mean_vec)
+    if not np.any(valid) or np.isnan(wt_ref[valid]).any():
         return None
 
     mutation = normalize_mutation(variant_name)
@@ -1241,10 +1188,7 @@ def _build_variant_row_from_cifs(
         "gene": gene,
         "mutation": mutation,
         "Variant": variant_name,
-        "d1_score": float(d1.mean()),
-        "d1_score_col": "Mean_D1_ratio_of_means",
-        "Sum_D1": float(d1.sum()),
-        "Num_Residues": int(d1.size),
+        "Num_Residues": int(valid.sum()),
         "Num_Structures": int(used_structures),
         "label": -1,
         "label_col": "none(-1)",
@@ -1277,17 +1221,6 @@ def _build_variant_row_from_csv(
     if not np.any(valid):
         return None
 
-    wt_vals = wt_vals[valid]
-    mut_vals = mut_vals[valid]
-    ratio = np.divide(
-        mut_vals,
-        wt_vals,
-        out=np.zeros_like(mut_vals, dtype=np.float32),
-        where=(wt_vals != 0),
-    )
-    d1 = np.abs(ratio - 1.0).astype(np.float32)
-    if d1.size == 0:
-        return None
 
     mutation = normalize_mutation(variant_name)
     if mutation is None:
@@ -1298,10 +1231,7 @@ def _build_variant_row_from_csv(
         "gene": gene,
         "mutation": mutation,
         "Variant": variant_name,
-        "d1_score": float(d1.mean()),
-        "d1_score_col": "Mean_D1_ratio_of_means",
-        "Sum_D1": float(d1.sum()),
-        "Num_Residues": int(d1.size),
+        "Num_Residues": int(valid.sum()),
         "Num_Structures": eff_structures,
         "label": -1,
         "label_col": "none(-1)",

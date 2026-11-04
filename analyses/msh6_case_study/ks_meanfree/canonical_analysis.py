@@ -57,11 +57,6 @@ MACRO_SETS = (
     ("macro_no_MSH6_no_POLE",
      tuple(p for p in PRIMARY_PROTEINS if p not in ("MSH6", "POLE"))),
 )
-COMBINATIONS = {
-    "d1_ks_raw": ("d1", "ks_raw"),
-    "d1_ks_centred": ("d1", "ks_centred"),
-    "d1_sd_ratio": ("d1", "sd_ratio"),
-}
 # canonical_v2_strict is the SUPERSEDED merged-MutS_alpha run and must not be
 # the default output any more -- a bare invocation would overwrite the
 # reference run with split-cohort data.
@@ -99,16 +94,6 @@ def score_gene_seeds(per_variant: pd.DataFrame) -> pd.DataFrame:
             score = block[metric].to_numpy(float)
             valid = np.isfinite(score)
             row[f"auc_{metric}"] = fast_auc(y[valid], score[valid])
-
-        ranks = {
-            metric: rankdata(block[metric].to_numpy(float)) / (len(block) + 1.0)
-            for metric in METRICS
-        }
-        for name, members in COMBINATIONS.items():
-            score = np.mean([ranks[m] for m in members], axis=0)
-            row[f"auc_combo_{name}"] = fast_auc(y, score)
-        row["rho_ksraw_d1"] = float(block[["ks_raw", "d1"]].corr(method="spearman").iloc[0, 1])
-        row["rho_kscentred_d1"] = float(block[["ks_centred", "d1"]].corr(method="spearman").iloc[0, 1])
         rows.append(row)
     return pd.DataFrame(rows)
 

@@ -92,10 +92,6 @@ def relative_change(reference, comparison):
     return float(np.abs(comparison[valid] / reference[valid] - 1.0).mean())
 
 
-def _d1(wt, mutant, *, backend="auto"):
-    return relative_change(wt.mean(axis=1), mutant.mean(axis=1))
-
-
 def _sd_ratio(wt, mutant, *, backend="auto"):
     return relative_change(wt.std(axis=1), mutant.std(axis=1))
 
@@ -129,7 +125,6 @@ class Metric:
 
 
 REGISTRY = {
-    "d1": Metric("d1", _d1),
     "ks_raw": Metric("ks_raw", residue_ks,
                      backends=("auto", "fast", "scipy")),
     # Defined at N=1 but identically 0 there: centring one observation leaves 0.
@@ -141,7 +136,7 @@ METRICS = tuple(REGISTRY)
 
 
 def descriptor_values(wt, mutant):
-    """The four canonical descriptors on an equal-size, complete-row pair."""
+    """The canonical descriptors on an equal-size, complete-row pair."""
     wt, mutant = _inputs(wt, mutant)
     if wt.shape != mutant.shape:
         raise ValueError("canonical descriptor inputs must have equal ensemble sizes")

@@ -33,11 +33,8 @@ collapsed to its mean first, then one KS across the residue axis. So this figure
 is not a departure from the manuscript; it is the first figure that agrees with
 the manuscript's own equation, and the published one was the anomaly.
 
-The two are not interchangeable. On this cohort profileKS loses to D1 on the
-macro (0.781 vs 0.790) while resKS beats it (0.805), and the caption claim "KS
-exceeds D1 in POLE" holds under resKS (0.858 > 0.853) and fails under profileKS
-(0.842 < 0.853). Centred KS is defined per residue too, so only resKS makes it
-"the mean-free counterpart of KS".
+The two are not interchangeable: they rank variants differently. Centred KS is
+defined per residue too, so only resKS makes it "the mean-free counterpart of KS".
 
 Figure 1's KS panels were moved to resKS on 2026-09-11 for the same reason.
 
@@ -48,8 +45,8 @@ PANELS (relettered 2026-09-15)
   2 SUMMARY
   b  macro ROC-AUC against ensemble size over the five datasets.
   3 FUNCTIONAL
-  c  per-variant score against the assay at N=90, TP53 and KRAS x D1 and
-     resKS, with the least-squares line and its Spearman rho and R^2.
+  c  per-variant score against the assay at N=90, TP53 and KRAS x resKS,
+     with the least-squares line and its Spearman rho and R^2.
   4 FUSION   (non-learned, from 2026-09-15)
   e  fusion macro against ensemble size, against the flat AM reference.
   f  per-gene AUC against ensemble size on the functional cohort.
@@ -121,7 +118,7 @@ CACHE = REPO / "drift" / "cache"
 FINGERPRINT = f"proteins{protein_config_fingerprint()}"
 
 INK, GREY, AFM_C = "#12161d", "#6f7684", "#8d8d8d"
-D1_C, KS_C = "#d1495b", "#6a4c93"          # matches the published Figure 2
+KS_C = "#6a4c93"                           # matches the published Figure 2
 GENE_C = {"POLE": "#0f7b6c", "MSH2": "#2a78d6", "MSH6": "#c2255c",
           "VHL": "#b58900", "PTEN": "#6a4c93", "PIK3CA": "#e8590c"}
 # The colour system, so a hue means one thing across the figure:
@@ -145,23 +142,18 @@ FUNC_YLABEL = {"TP53": "log$_{10}$ selection score",
                "MSH2": "LOF score"}
 FUSION_C, TREND_C = "#1b9aaa", "#1d3557"
 GZ_METHOD, GZ_ARM = "gz_mean", "AM+resKS"
-# Same fusion at N=1, with literal KS interpreted as residue mismatch.
-ANCHOR_ARM = "AM+resKS"
 # What the panels PRINT. Kept apart from GZ_ARM, which has to stay the literal
 # value in the benchmark's `arm` column: a reader cannot tell a non-learned
 # z-mean from a fitted logistic arm if both are labelled "AM+resKS".
 GZ_LABEL = "AM + KS-score (equal weight)"
 ARM_C = {GZ_LABEL: FUSION_C}
 # The three frozen fusion arms, as (fusion_partner, variant) in the sweep table.
-# residue KS only, from 2026-09-15. D1 was dropped from both article figures:
-# it loses to resKS on the macro (0.790 vs 0.805), and every arm it appears in
-# is beaten by AM+resKS alone, so it cost a descriptor without buying a result.
+# Residue KS only.
 DESCRIPTORS = [("KS-score", "plddt_ks_residue", KS_C)]
 # Residue KS is defined for N>=1 (descriptor_metrics). At N=1 it is the fraction
 # of residues whose WT and mutant pLDDTs differ. The N=1 caches carry it directly again;
 # inputs/ks_n1* is the independent snapshot they are cross-checked against.
 ANCHOR = ("KS at N=1", "plddt_ks_residue", KS_C)
-SINGLETON_INPUT = HERE / "inputs" / "ks_n1.csv.gz"
 DEFAULT_GZ = (REPO / "analyses" / "annotation" / "simple_fusion_benchmark"
               / tagged("results_size_sweep_annotation"))
 # The fusion panels read the NON-LEARNED benchmark, not the logistic sweep, from
@@ -212,12 +204,6 @@ CONT_SRC = REPO / "analyses" / "continuous" / "continuous_functional"
 SCATTER_METRICS = [("plddt_ks_residue", "KS-score", KS_C)]
 # All four continuous-assay datasets (analyses/continuous/continuous_functional).
 FUNCTIONAL = ["TP53", "KRAS", "PTEN", "MSH2"]
-# Only the two descriptors this figure is about. profileKS is still COMPUTED by
-# run_continuous.py and lands in panel_ef_functional.csv, so the estimator
-# switch stays auditable -- it is simply not drawn, because the figure plots
-# residueKS throughout and showing both invites reading them as one quantity.
-PAIR_C = {"afm_resks": KS_C}
-PAIR_LABEL = {"afm_d1": "AM + D1", "afm_resks": "AM + residue KS"}
 
 plt.rcParams.update({
     "font.family": "sans-serif", "axes.edgecolor": "#c9ccd2",
@@ -239,7 +225,7 @@ def singleton_scores(seed):
     compared row for row. The finiteness check below is the remaining guard.
     """
     current = pd.read_csv(CACHE / (
-        f"labeled_size1_seed{seed}_ratio_of_means_{FINGERPRINT}_esfeat6.csv"
+        f"labeled_size1_seed{seed}_{FINGERPRINT}_esfeat7.csv"
     )).sort_values(["gene", "mutation"]).reset_index(drop=True)
     if not np.isfinite(current.plddt_ks_residue).all():
         raise ValueError(f"N=1 cache for seed {seed} lacks KS; run restore_ks_n1.py")
@@ -253,9 +239,9 @@ def per_gene_curves(genes):
     unsigned, which is what reproduces the published panel.
     """
     rows = []
-    files = sorted(glob.glob(str(CACHE / f"labeled_size*_seed*_*{FINGERPRINT}_esfeat6.csv")))
+    files = sorted(glob.glob(str(CACHE / f"labeled_size*_seed*_{FINGERPRINT}_esfeat7.csv")))
     if not files:
-        raise SystemExit(f"no esfeat6 caches for {FINGERPRINT} under {CACHE}")
+        raise SystemExit(f"no esfeat7 caches for {FINGERPRINT} under {CACHE}")
     cols = ["gene", "label"] + [c for _, c, _ in DESCRIPTORS + [ANCHOR]]
     for f in files:
         m = re.search(r"size(\d+)_seed(\d+)", f)

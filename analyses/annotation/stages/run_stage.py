@@ -2,8 +2,8 @@
 
 Only module path constants are redirected: model grids, samplers, fitters, threshold
 policies and bootstrap definitions stay in the existing modules. Inputs: the score caches
-in drift/cache (fingerprint 97f1cdbfda8e, seeds 42-51, written by
-`python -m drift.run --sweep`, see run_all.sh). Outputs: publication/ (the stages behind
+in drift/cache (fingerprint 22e178adaa91, seeds 42-51, written by
+`python -m drift.run`, see run_all.sh). Outputs: publication/ (the stages behind
 Figure 2 and the main-text numbers) and side/ (the SI analyses).
 
     PYTHONPATH="." python analyses/annotation/stages/run_stage.py <stage>
@@ -28,7 +28,7 @@ HERE = Path(__file__).resolve().parent
 OUT = HERE / "publication"
 SIDE = HERE / "side"
 CACHE = ROOT / "drift/cache"
-FP = "97f1cdbfda8e"  # the published run: 49028c16cbb3 (with FOXA1, which left on 2026-11-03)
+FP = "22e178adaa91"  # v1.0: 97f1cdbfda8e; the paper's run: 49028c16cbb3 (with FOXA1)
 SIZES, SEEDS = (1, 5, 10, 20, 40, 60, 90), range(42, 52)
 TAG = "v6_pole25_20261020"
 os.environ["DRIFT_RUN_TAG"] = TAG
@@ -73,7 +73,7 @@ def check_inputs():
     assert Path(ensemble_shift.__file__).resolve().is_relative_to(ROOT), \
         f"imported {ensemble_shift.__file__}, not this checkout (PYTHONPATH must be '.')"
     missing = [f"size{n} seed{s}" for n in SIZES for s in SEEDS
-               if not (CACHE / f"labeled_size{n}_seed{s}_ratio_of_means_proteins{FP}_esfeat6.csv").exists()]
+               if not (CACHE / f"labeled_size{n}_seed{s}_proteins{FP}_esfeat7.csv").exists()]
     assert not missing, (f"{len(missing)} of {len(SIZES) * len(SEEDS)} score caches missing under {CACHE}, "
                          f"e.g. {missing[0]}; build them with `bash run_all.sh B1_cache`")
 

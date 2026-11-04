@@ -57,7 +57,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from figlib import *  # noqa: F403,E402
 
-from ratio_exemplar import CANONICAL_SEED, PER_VARIANT, sampled_pair  # noqa: E402
+from exemplar_sampling import CANONICAL_SEED, PER_VARIANT, sampled_pair  # noqa: E402
 from matplotlib.patches import ConnectionPatch  # noqa: E402
 from scipy.stats import gaussian_kde, ks_2samp  # noqa: E402
 from sklearn.metrics import roc_auc_score  # noqa: E402

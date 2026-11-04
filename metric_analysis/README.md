@@ -49,7 +49,7 @@ metric_analysis/
 | `canonical_cohort.py` | the strict canonical cohort (1,798 annotation variants) and each row's file provenance |
 | `descriptor_metrics.py` | descriptor definitions, including the residue KS (the KS-score) |
 | `descriptor_sampling.py` | descriptor values from a variant's pLDDT matrix (the subunit row blocks for MSH2 and MSH6) |
-| `plddt_ks.py`, `plddt_distribution.py` | per-residue WT-vs-variant pLDDT distribution tests |
+| `plddt_distribution.py` | per-residue WT-vs-variant pLDDT distribution metrics |
 | `positional_ks.py` | the KS-score on C-alpha positions instead of pLDDT |
 | `af3_seeds.py` | AF3 seed numbers of the predictions, and the per-gene seed cap |
 | `fast_plddt.py` | pLDDT extraction with output identical to the `plddt` stage |

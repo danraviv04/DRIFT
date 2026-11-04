@@ -1,8 +1,8 @@
 """Qualitative POLE driver-vs-passenger KS box plot for the graphical abstract.
 
 Scores: residueKS (plddt_ks_residue) at N=90, averaged over the ten canonical
-draws (seeds 42-51) of the POLE 25-seed caches in drift/cache (fingerprint
-97f1cdbfda8e, P356S dropped; 38 drivers / 1,036 passengers).
+draws (seeds 42-51) of the POLE 25-seed caches in drift/cache (current config
+fingerprint, P356S dropped; 38 drivers / 1,036 passengers).
 """
 from pathlib import Path
 
@@ -13,9 +13,11 @@ import numpy as np
 import pandas as pd
 from scipy.stats import mannwhitneyu
 
+from drift.protein_config import protein_config_fingerprint
+
 HERE = Path(__file__).resolve().parent
 CACHE = HERE.parents[2] / "drift/cache"
-FILES = [CACHE / f"labeled_size90_seed{s}_ratio_of_means_proteins97f1cdbfda8e_esfeat6.csv"
+FILES = [CACHE / f"labeled_size90_seed{s}_proteins{protein_config_fingerprint()}_esfeat7.csv"
          for s in range(42, 52)]
 DRIVER, PASSENGER = "#D1495B", "#2E86AB"
 rng = np.random.default_rng(0)

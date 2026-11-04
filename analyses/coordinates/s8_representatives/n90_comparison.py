@@ -32,8 +32,7 @@ EXCLUSIONS = HERE / 'exclusions.csv'
 CACHE = ROOT / 'experiments/pole_wt_repair/cache'
 FP = 'ebbbda31758d'
 SEEDS = list(range(42, 52))
-METHODS = ['KS', 'mean_D1', 'mean_MAE', 'medoid_D1', 'medoid_MAE',
-           'nearest_mean_D1', 'nearest_mean_MAE']
+METHODS = ['KS', 'mean_MAE', 'medoid_MAE', 'nearest_mean_MAE']
 BOOT = 2000
 HASHES = {}
 
@@ -93,11 +92,6 @@ def select(frame, draw_tags, recovered=None):
     return choices
 
 
-def d1(a, b):
-    # Match the production ratio/aggregation precision for all D1 baselines.
-    return float(np.abs(b.astype(np.float32) / a.astype(np.float32) - 1).mean())
-
-
 def calculate():
     cohort = pd.read_csv(COHORT)
     excluded = pd.read_csv(EXCLUSIONS)
@@ -113,7 +107,7 @@ def calculate():
     configs = load_protein_configs()
     reference = []
     for seed in SEEDS:
-        path = CACHE / f'labeled_size90_seed{seed}_ratio_of_means_proteins{FP}_esfeat6.csv'
+        path = CACHE / f'labeled_size90_seed{seed}_proteins{FP}_esfeat7.csv'
         sha(path)
         reference.append(pd.read_csv(path).assign(seed=seed))
     reference = pd.concat(reference).set_index(['gene', 'mutation', 'seed'])
@@ -121,7 +115,7 @@ def calculate():
     for gene in GENES:
         started = time.monotonic()
         records = cohort[cohort.protein.eq(gene)].to_dict('records')
-        cfg = configs[gene]['d1']
+        cfg = configs[gene]['structures']
         source = records[0]['wt_source_file']
         assert {r['wt_source_file'] for r in records} == {source}
         assert [p.resolve() for p in cfg['read_root'].glob(cfg['wt_csv_glob'])] == [Path(source).resolve()]
@@ -168,8 +162,8 @@ def calculate():
                                    'candidate_tags': '|'.join(draw)})
         assert set(chosen) == set(wanted)
         wc = chosen[report['wt_artifact']]
-        max_d1_error = 0.0
-        for number, record in enumerate(records):
+        max_ks_error = 0.0
+        for record in records:
             mutation = record['mutation_code']
             artifact = sources[mutation]
             mutant, columns = matrices[artifact]
@@ -177,24 +171,20 @@ def calculate():
                 a, b = wt[:, wo[j]], mutant[:, mutant_orders[artifact][j]]
                 ref = reference.loc[(gene, mutation, seed)]
                 assert int(ref.label) == int(record['label'])
-                computed_d1 = d1(a.mean(1), b.mean(1))
-                error = abs(computed_d1 - ref.d1_score)
-                max_d1_error = max(max_d1_error, error)
-                assert error < 1e-7, (gene, mutation, seed, error)
-                # Cache KS is reused only after direct all-residue checks per gene.
-                if number == 0:
-                    assert abs(residue_ks(a, b) - ref.plddt_ks_residue) < 1e-12
-                values = {'KS': float(ref.plddt_ks_residue), 'mean_D1': float(ref.d1_score),
+                # The draw reproduces the cache: KS recomputed from it for every variant.
+                error = abs(residue_ks(a, b) - ref.plddt_ks_residue)
+                max_ks_error = max(max_ks_error, error)
+                assert error < 1e-12, (gene, mutation, seed, error)
+                values = {'KS': float(ref.plddt_ks_residue),
                           'mean_MAE': float(np.abs(b.mean(1) - a.mean(1)).mean())}
                 for k, name in enumerate(['medoid', 'nearest_mean']):
                     left = wt[:, wt_cols.index(wc[j][k])]
                     right = mutant[:, columns.index(chosen[artifact][j][k])]
-                    values[name + '_D1'] = d1(left, right)
                     values[name + '_MAE'] = float(np.abs(right - left).mean())
                 rows.append({'gene': gene, 'mutation': mutation, 'label': int(record['label']),
                              'seed': seed, 'n_residues': len(wt), **values})
-        audits.append({'gene': gene, 'variants': len(records), 'max_mean_D1_cache_error': max_d1_error,
-                       'KS_direct_cache_checks': 10, 'medoids_direct_checked': len(chosen),
+        audits.append({'gene': gene, 'variants': len(records), 'max_KS_cache_error': max_ks_error,
+                       'medoids_direct_checked': len(chosen),
                        'coordinate_path': str(coordinate_path), 'coordinate_bytes': coordinate_path.stat().st_size,
                        'coordinate_mtime_ns': coordinate_path.stat().st_mtime_ns})
         pd.DataFrame(rows).query('gene == @gene').to_csv(OUT / f'{gene}_scores.csv', index=False)
@@ -312,8 +302,7 @@ def main():
         'selection': 'within each actual production N90 draw; summed fixed-frame CA RMSD medoid or nearest coordinate mean; lexicographic tie breaking',
         'source_pools': 'all source CSV columns, including extra POLE seeds where present; exact production draw keys',
         'scope': 'all scored-chain residues in existing core_fit frame; separate MSH2/MSH6 systems; corrected single POLE WT',
-        'D1_precision': 'production float32 ratio and aggregation for all D1 comparisons',
-        'cached_values': 'corrected ebbbda31758d KS reused after 60 direct checks; mean D1 checked for every matched variant/draw',
+        'cached_values': 'cached KS recomputed from the matched draw for every variant/seed (|error| < 1e-12)',
         'source_sha256': HASHES, 'runtime_seconds': time.monotonic() - started,
         'limitations': 'conditional on existing generations and fitting frame; no multiple-comparison adjustment or inference for untested selection rules',
     }, indent=2) + '\n')

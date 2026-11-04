@@ -107,7 +107,7 @@ def clusters_of(mutations, singleton=False):
 # ---------------------------------------------------------------- KS-score AUC
 def ks_matrices():
     """Variant x seed KS matrices, built exactly as ks_auc_ci_v6.py builds them."""
-    frames = [pd.read_csv(CACHE / f"labeled_size{SIZE}_seed{s}_ratio_of_means_proteins{FP}_esfeat6.csv")
+    frames = [pd.read_csv(CACHE / f"labeled_size{SIZE}_seed{s}_proteins{FP}_esfeat7.csv")
               .assign(seed=s) for s in SEEDS]
     d = pd.concat(frames)
     d = d[d.gene.isin(GENES)]

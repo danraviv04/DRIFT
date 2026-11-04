@@ -3,7 +3,7 @@
 
 Everything a new figure script needs so it does not re-derive plumbing, and so
 every panel written here lands on the same cohort, the same style and the same
-provenance record as `drift.article_figures`.
+provenance record as the other figure scripts.
 
 Usage
 -----
@@ -58,7 +58,6 @@ RESULTS = HERE / "results"
 RESULTS.mkdir(parents=True, exist_ok=True)
 
 FUSION = REPO / "drift"
-FUSION_RESULTS = FUSION / "results"
 FUSION_CACHE = FUSION / "cache"
 STRUCTURE_METRICS = REPO / "metric_analysis" / "structure_metrics"
 MANIFESTS = REPO / "metric_analysis" / "manifests"
@@ -72,12 +71,6 @@ if str(REPO) not in sys.path:
 
 from metric_analysis.pipeline.paths import RUN_TAG, tagged  # noqa: E402
 
-#: per-variant x seed x requested-size scores (d1, ks_raw, ks_centred), run-tagged.
-#: KS at N=1 is the residue discordance rate (kept since 2026-10-15, b0e7ccbf).
-CANONICAL_SIZE_SCORES = (
-    FUSION_RESULTS / "afm_fusion" / tagged("cohort_size_sweep")
-    / "per_variant_seed_requested_sizes.csv.gz"
-)
 
 # ── genes ─────────────────────────────────────────────────────────────────────
 
@@ -126,7 +119,7 @@ def pretty(gene: str) -> str:
 
 # ── style ─────────────────────────────────────────────────────────────────────
 
-# Palette carried over from drift.article_figures so new panels sit beside
+# Palette carried over from the earlier article panels so new panels sit beside
 # the existing ones without a colour discontinuity.
 DRV = "#d1495b"   # driver / positive
 PAS = "#2a78d6"   # passenger / negative (= main Fig. 1f)
@@ -293,7 +286,7 @@ def provenance(out_dir=None, **extra):
 def labeled(size=90, seed=42, genes=None):
     """Strict-cohort per-variant table at one ensemble size and seed.
 
-    Columns include: gene, mutation, label, afm_score, d1_score,
+    Columns include: gene, mutation, label, afm_score,
     plddt_spread_ratio, plddt_wasserstein, plddt_ks_residue, plddt_ks_centred.
 
     The cache is the CURRENT protein config's (fingerprint-pinned), default
@@ -303,7 +296,7 @@ def labeled(size=90, seed=42, genes=None):
     1,798-variant annotation cohort.
     """
     from drift.protein_config import protein_config_fingerprint
-    from drift.run import _apply_strict_canonical_cohort  # lazy: slow import
+    from drift.run import _apply_strict_canonical_cohort  # lazy import
     fp = f"proteins{protein_config_fingerprint()}"
     hits = [p for p in FUSION_CACHE.glob(f"labeled_size{size}_seed{seed}_*{fp}_esfeat*.csv")
             if "nested-" not in p.name and "top_confidence" not in p.name]
@@ -344,18 +337,6 @@ def plddt_matrix(path) -> np.ndarray:
 def plddt_frame(path) -> pd.DataFrame:
     """Same, keeping residue index and structure column names."""
     return pd.read_csv(path, index_col=0)
-
-
-def size_scores(columns=("protein", "mutation_code", "label", "seed_index",
-                         "requested_size", "d1", "ks_raw", "ks_centred")):
-    """Per-variant x seed x requested-size scores from the run-tagged size sweep.
-
-    Holds the six annotation genes. ks_centred is NaN at N=1 by design.
-    """
-    if not CANONICAL_SIZE_SCORES.is_file():
-        raise FileNotFoundError(
-            f"missing {CANONICAL_SIZE_SCORES}; run drift.cohort_size_sweep")
-    return pd.read_csv(CANONICAL_SIZE_SCORES, usecols=list(columns))
 
 
 #: USalign-frame caches of the subunits lived under their modelled complex
@@ -407,14 +388,6 @@ def coords(protein, artifact=None, columns=None, frame="core_fit"):
     return pd.read_parquet(p, filters=filters, columns=columns)
 
 
-def sweep(run_dir, filename="sweep_runs.csv"):
-    """One sweep directory's runs table, e.g. sweep("sampling_policy_d1_v2_strict")."""
-    p = FUSION_RESULTS / run_dir / filename
-    if not p.is_file():
-        raise FileNotFoundError(f"missing {p}")
-    return pd.read_csv(p)
-
-
 class CohortMismatch(AssertionError):
     """A figure's frame does not hold the documented v5 cohort."""
 
@@ -463,9 +436,8 @@ def check_cohort(df=None, gene_col="gene", cohort="annotation", verbose=True):
 
 __all__ = [
     "np", "pd", "plt", "matplotlib",
-    "REPO", "HERE", "RESULTS", "FUSION", "FUSION_RESULTS", "FUSION_CACHE",
+    "REPO", "HERE", "RESULTS", "FUSION", "FUSION_CACHE",
     "STRUCTURE_METRICS", "MANIFESTS", "STRICT_MANIFEST", "PLDDT_ROOT",
-    "CANONICAL_SIZE_SCORES",
     "RUN_TAG", "tagged",
     "GENES", "EVALUATION_GENES", "CANONICAL_PROTEINS", "LABEL_SOURCE",
     "ANNOTATION_GENES", "CONTROL_GENES", "CONTINUOUS_GENES",
@@ -474,6 +446,6 @@ __all__ = [
     "DRV", "PAS", "WTC", "AMC", "ACC", "GRY", "GENE_COLOR", "class_violin",
     "MM", "W1", "W15", "W2", "panel", "grid", "save",
     "record", "write_values", "provenance",
-    "labeled", "cohort", "plddt_matrix", "plddt_frame", "size_scores",
-    "coords", "coord_cache_path", "coord_fit_report", "sweep", "check_cohort",
+    "labeled", "cohort", "plddt_matrix", "plddt_frame",
+    "coords", "coord_cache_path", "coord_fit_report", "check_cohort",
 ]

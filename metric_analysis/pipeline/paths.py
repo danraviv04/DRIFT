@@ -33,7 +33,7 @@ def manuscript_root(*, must_exist: bool = False) -> Path | None:
     REPO_ROOT.parent is wrong in a git worktree: worktrees live under
     ensemble-driver-classifier.worktrees/, so a plain sibling lookup resolves
     to .worktrees/<manuscript repo> and misses. si_panels.py failed loudly on this
-    (overnight run 2026-08-30); article_figures.py failed SILENTLY, defaulting
+    (overnight run 2026-08-30); the article panel script failed SILENTLY, defaulting
     --copy-to to None and skipping the panel copy while still reporting success.
 
     git's common dir always points at the MAIN checkout's .git, so its

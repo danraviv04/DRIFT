@@ -49,7 +49,7 @@ export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
 # Output folders of the v6_ca run (per-protein stages, continuous route, coordinates) carry
 # this tag; the 25-seed runner (analyses/annotation/stages/run_stage.py) sets its own.
 export DRIFT_RUN_TAG=v6_ca
-FINGERPRINT=97f1cdbfda8e      # drift/protein_configs.json: the paper's config minus FOXA1 (was 49028c16cbb3)
+FINGERPRINT=22e178adaa91      # drift/protein_configs.json (v1.0: 97f1cdbfda8e; the paper's run: 49028c16cbb3)
 LOGS="$W/logs"
 STATUS="$LOGS/STATUS.log"
 BINARY="POLE,PTEN,VHL,MSH2,MSH6,PIK3CA"
@@ -160,14 +160,9 @@ L1_manifest () { stage L1_manifest $PY analyses/cohort/build_strict_canonical_ma
 
 # ---------------------------------------------------------------------------- descriptors
 C1_ks_meanfree () { stage C1_ks_meanfree $PY analyses/msh6_case_study/ks_meanfree/canonical_analysis.py --force; }
-b1_seed () {   # one score-cache shard: every size for one subsampling seed. The caches go to
-  # drift/cache (reused when present); the shard folder holds only the sweep's own model-fit
-  # tables, which nothing reads, and starts empty (the sweep refuses one holding a checkpoint).
-  local out="$W/drift/results/_cache_shard_seed$1"
-  [ "${DRY_RUN:-0}" = 1 ] || rm -rf "$out"
-  stage "B1_cache_seed$1" $PY -u -m drift.run --sweep \
-        --sizes 1,5,10,20,40,60,90 --seeds "$1-$1" --gt-group annotation \
-        --feature-variants base --out "$out"
+b1_seed () {   # the score caches for one subsampling seed, every size; they go to drift/cache
+  # and are reused when present
+  stage "B1_cache_seed$1" $PY -u -m drift.run --sizes 1,5,10,20,40,60,90 --seeds "$1"
 }
 B1_cache () {        # ten seeds in parallel, ~7 min
   local pids=() rc=0 s p
@@ -197,9 +192,8 @@ E_annotation () {
   && rs ks_auc_ci && rs position_cluster && rs wt12v12 \
   && rs s8_n90 && rs s1_matched && rs fig1cd && rs s1a
 }
-E_continuous () {
-  stage G1_continuous $PY analyses/continuous/continuous_functional/run_continuous.py --force \
-  && stage G6_four_gene_ks $PY analyses/continuous/continuous_functional/plot_four_gene_ks.py
+E_continuous () {    # Fig. 2c-f; builds the N=90 continuous caches it reads
+  stage G6_four_gene_ks $PY analyses/continuous/continuous_functional/plot_four_gene_ks.py
 }
 POOL=analyses/msh6_case_study/wt_pool/wt_75seeds/MutS_alpha_MSH6_GT_WT_75seeds_plddt_values.csv
 PTEN_POOL="PLDDTs/PTEN/PTEN_WT_plddt_values.csv analyses/msh6_case_study/wt_backgrounds_200/plddt/PTEN_WT_seeds26-200_plddt_values.csv"

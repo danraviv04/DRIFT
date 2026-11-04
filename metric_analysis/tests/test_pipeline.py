@@ -14,7 +14,6 @@ Uses stdlib unittest deliberately: pytest is not installed in the thesis_core en
 these need to run without adding a dependency.
 """
 
-import json
 import sys
 import tempfile
 import unittest
@@ -151,97 +150,6 @@ class TestLabelModes(unittest.TestCase):
             self.assertEqual(labels.classify_allele_or_artifact(name, cfg), "WT", name)
         with self.assertRaises(ValueError):
             labels.classify_allele_or_artifact("A1B", {"label_mode": "nonsense_mode"})
-
-
-class TestDegenerateFeatureGuard(unittest.TestCase):
-    """Regression: Cohen's d divides by pooled SD, so a near-constant feature gets a huge
-    |d| with no discriminative power. POLE's pct_very_low (3 distinct values across 1075
-    mutations) ranked #1 at |d|=2.74 with ROC AUC 0.606, taking a slot in the 10-feature
-    LDA and displacing a real feature."""
-
-    def _frame(self, n=200):
-        rng = np.random.default_rng(0)
-        label = np.array([1] * (n // 4) + [0] * (n - n // 4))
-        good = np.where(label == 1, rng.normal(6, 1, n), rng.normal(3, 1, n))
-
-        # Reproduce pct_very_low faithfully: a handful of DISTINCT VALUES, almost all
-        # identical. Adding smooth jitter here would defeat the test -- it gives the
-        # column hundreds of distinct values and a healthy relative_std, at which point
-        # the guard rightly declines to flag it. The real column had 3 distinct values
-        # across 1075 rows (1066 of them identical), which is what makes |d| explode
-        # while ROC AUC stays near chance.
-        near_constant = np.where(label == 1, 0.19, 0.198413)
-        near_constant[2] = 0.190001          # a couple of extra distinct values, so
-        near_constant[-2] = 0.198414         # within-group SD is tiny but not exactly 0
-        return pd.DataFrame({"label": label, "good_feature": good,
-                             "near_constant": near_constant,
-                             "truly_constant": np.ones(n)})
-
-    def test_the_fixture_really_is_near_constant(self):
-        """Guards the test itself: an earlier version added jitter and silently stopped
-        exercising the condition it claimed to."""
-        f = self._frame()
-        self.assertLessEqual(f["near_constant"].nunique(), 4,
-                             "fixture must have very few distinct values to be degenerate")
-
-    def test_near_constant_is_flagged_and_demoted(self):
-        disc = sm.run_feature_discrimination_analysis(self._frame())
-        self.assertIn("degenerate", disc.columns)
-        row = disc.set_index("feature").loc["near_constant"]
-        self.assertTrue(bool(row["degenerate"]), "3-distinct-value feature must be flagged")
-        self.assertGreater(abs(row["cohens_d"]), 1.0,
-                           "its |d| is genuinely inflated -- that is the whole trap")
-        self.assertEqual(disc.iloc[0]["feature"], "good_feature",
-                         "the genuinely separating feature must rank first")
-        self.assertFalse(bool(disc.iloc[0]["degenerate"]))
-
-    def test_degenerate_rows_are_still_reported_not_dropped(self):
-        disc = sm.run_feature_discrimination_analysis(self._frame())
-        self.assertIn("near_constant", set(disc["feature"]),
-                      "flagged features must stay visible for diagnosis")
-
-    def test_degenerate_features_sort_last(self):
-        disc = sm.run_feature_discrimination_analysis(self._frame())
-        flags = disc["degenerate"].tolist()
-        self.assertEqual(flags, sorted(flags), "all non-degenerate rows must precede degenerate ones")
-
-
-class TestLdaScoreExport(unittest.TestCase):
-    """Regression: stage_discrimination guarded on `"lda_scores" in lda_result`, but
-    run_lda_analysis_cv returns the scores under "df_scores". The guard was always False,
-    so *_mutations_with_scores.csv shipped with no scores and was byte-identical to
-    *_mutation_features.csv for all 5 proteins."""
-
-    def _result(self):
-        rng = np.random.default_rng(1)
-        n = 120
-        label = np.array([1] * 30 + [0] * (n - 30))
-        df = pd.DataFrame({
-            "label": label,
-            "f1": np.where(label == 1, rng.normal(5, 1, n), rng.normal(2, 1, n)),
-            "f2": rng.normal(0, 1, n),
-        })
-        disc = sm.run_feature_discrimination_analysis(df)
-        return df, sm.run_lda_analysis_cv(df, discrimination_df=disc, top_n=2,
-                                          n_splits=3, n_repeats=1, random_state=0)
-
-    def test_scores_live_under_df_scores_not_lda_scores(self):
-        _, res = self._result()
-        self.assertNotIn("lda_scores", res,
-                         "if this key ever appears, revisit run_structure_metrics' guard")
-        self.assertIn("df_scores", res)
-        self.assertIn("lda_score", res["df_scores"].columns)
-
-    def test_df_scores_index_aligns_so_a_join_is_safe(self):
-        df, res = self._result()
-        self.assertTrue(res["df_scores"].index.equals(df.index),
-                        "the export joins on index, not position")
-
-    def test_lda_score_separates_the_classes(self):
-        df, res = self._result()
-        s = res["df_scores"]["lda_score"]
-        self.assertGreater(s[df.label == 1].mean(), s[df.label == 0].mean(),
-                           "scores must be oriented so drivers score higher")
 
 
 class TestChunkCountGuard(unittest.TestCase):
@@ -527,255 +435,6 @@ class TestConfigIntegrity(unittest.TestCase):
                 self.assertGreater(counts["Passenger"], 0, f"{p}: zero Passengers")
 
 
-class TestClassDominance(unittest.TestCase):
-    """Regression: the script refactor silently dropped this analysis.
-
-    Driver-vs-Passenger Mann-Whitney on the RMSF/DNA metrics lived inline in the five
-    notebooks. Replacing them with run_structure_metrics.py ported the compute but not
-    this, so the pipeline shipped for weeks producing strictly less than the notebooks
-    had -- and nothing failed, because a missing analysis leaves no error behind, only
-    an absent file. These tests pin the statistics so the port is verifiable, not just
-    present.
-    """
-
-    def _frame(self, driver_vals, passenger_vals):
-        rows = [{"artifact": f"P_D{i}X_model", "status": "ok", "m": v}
-                for i, v in enumerate(driver_vals, 1)]
-        rows += [{"artifact": f"P_P{i}X_model", "status": "ok", "m": v}
-                 for i, v in enumerate(passenger_vals, 1)]
-        return pd.DataFrame(rows)
-
-    @staticmethod
-    def _classify(name):
-        return "Driver" if "_D" in name else ("Passenger" if "_P" in name else "UNK")
-
-    def test_perfect_separation_gives_probability_one(self):
-        df = self._frame([10, 11, 12, 13], [1, 2, 3, 4])
-        row = sm.class_dominance_stats(
-            sm.attach_class_labels(df, ["m"], classify=self._classify), "m", "M")
-        self.assertEqual(row["p_driver_gt_passenger"], 1.0)
-        self.assertEqual(row["rank_biserial"], 1.0)
-        self.assertEqual((row["n_driver"], row["n_passenger"]), (4, 4))
-
-    def test_reversed_separation_gives_probability_zero(self):
-        df = self._frame([1, 2, 3, 4], [10, 11, 12, 13])
-        row = sm.class_dominance_stats(
-            sm.attach_class_labels(df, ["m"], classify=self._classify), "m", "M")
-        self.assertEqual(row["p_driver_gt_passenger"], 0.0)
-        self.assertEqual(row["rank_biserial"], -1.0)
-
-    def test_probability_equals_the_metrics_roc_auc(self):
-        """P(driver > passenger) is the common-language effect size, which IS the AUC of
-        the metric used alone. If these ever diverge, one of them is being computed wrong."""
-        from sklearn.metrics import roc_auc_score
-        rng = np.random.default_rng(0)
-        df = self._frame(rng.normal(1.0, 1.0, 40), rng.normal(0.0, 1.0, 40))
-        lab = sm.attach_class_labels(df, ["m"], classify=self._classify)
-        row = sm.class_dominance_stats(lab, "m", "M")
-        auc = roc_auc_score((lab["class"] == "Driver").astype(int), lab["m"])
-        self.assertAlmostEqual(row["p_driver_gt_passenger"], auc, places=10)
-
-    def test_too_few_members_returns_none_rather_than_a_bogus_test(self):
-        df = self._frame([5.0], [1.0])
-        self.assertIsNone(sm.class_dominance_stats(
-            sm.attach_class_labels(df, ["m"], classify=self._classify), "m", "M"))
-
-    def test_unlabelled_and_failed_artifacts_are_excluded(self):
-        df = self._frame([10, 11, 12], [1, 2, 3])
-        df.loc[len(df)] = {"artifact": "P_WT_model", "status": "ok", "m": 99.0}
-        df.loc[len(df)] = {"artifact": "P_D9X_model", "status": "error", "m": 1e6}
-        res = sm.run_class_dominance([(df, "m", "M")], classify=self._classify)
-        row = res["dominance_df"].iloc[0]
-        self.assertEqual((row["n_driver"], row["n_passenger"]), (3, 3),
-                         "WT/UNK or status!=ok rows leaked into the test")
-
-    def test_dominance_runs_over_multiple_source_frames(self):
-        """Whole-protein metrics and delta-vs-WT metrics live in different frames but
-        belong in one table -- that is how the notebooks presented them."""
-        a = self._frame([10, 11, 12], [1, 2, 3]).rename(columns={"m": "rmsf_mean"})
-        b = self._frame([1, 2, 3], [10, 11, 12]).rename(columns={"m": "delta_abs_mean"})
-        res = sm.run_class_dominance(
-            [(a, "rmsf_mean", "Mean RMSF"), (b, "delta_abs_mean", "Mean |delta|")],
-            classify=self._classify)
-        dom = res["dominance_df"].set_index("metric")
-        self.assertEqual(len(dom), 2)
-        self.assertEqual(dom.loc["rmsf_mean", "p_driver_gt_passenger"], 1.0)
-        self.assertEqual(dom.loc["delta_abs_mean", "p_driver_gt_passenger"], 0.0)
-
-    def test_figures_are_written_and_closed(self):
-        """Closing matters: a --protein all run makes dozens of figures, and pyplot keeps
-        every unclosed one alive."""
-        import matplotlib.pyplot as plt
-        df = self._frame([10, 11, 12, 13], [1, 2, 3, 4]).rename(columns={"m": "rmsf_mean"})
-        res = sm.run_class_dominance([(df, "rmsf_mean", "Mean RMSF")], classify=self._classify)
-        before = len(plt.get_fignums())
-        with tempfile.TemporaryDirectory() as d:
-            out = Path(d) / "dom.png"
-            sm.plot_class_dominance_panels(
-                res, violin_specs=[("rmsf_mean", "Mean RMSF", "A")], out_path=out)
-            self.assertTrue(out.exists() and out.stat().st_size > 0)
-        self.assertEqual(len(plt.get_fignums()), before, "figure left open")
-
-
-class TestD1DistributionPlot(unittest.TestCase):
-    def test_filters_unknown_and_nonfinite_values_and_writes_figure(self):
-        import matplotlib.pyplot as plt
-        df = pd.DataFrame({
-            "mutation_type": ["Driver", "Driver", "Passenger", "Passenger", "UNK", "Driver"],
-            "d1_mean": [0.4, 0.5, 0.1, 0.2, 999.0, np.nan],
-        })
-        before = len(plt.get_fignums())
-        with tempfile.TemporaryDirectory() as d:
-            out = Path(d) / "d1.png"
-            result = sm.plot_d1_distribution_by_class(df, dataset_name="TEST", out_path=out)
-            self.assertTrue(out.exists() and out.stat().st_size > 0)
-        self.assertEqual((result["n_driver"], result["n_passenger"]), (2, 2))
-        self.assertFalse(result["log_scale"])
-        self.assertEqual(len(plt.get_fignums()), before, "figure left open")
-
-    def test_large_positive_dynamic_range_uses_log_axis(self):
-        df = pd.DataFrame({
-            "mutation_type": ["Driver", "Driver", "Passenger", "Passenger"],
-            "d1_mean": [0.001, 1.0, 0.002, 0.5],
-        })
-        with tempfile.TemporaryDirectory() as d:
-            result = sm.plot_d1_distribution_by_class(
-                df, dataset_name="TEST", out_path=Path(d) / "d1.png")
-        self.assertTrue(result["log_scale"])
-
-
-class TestRmsfSharding(unittest.TestCase):
-    """The rmsf stage was serialised (MutS_alpha: ~5 min x 152 artifacts = ~13 h) and got
-    split across processes. Sharding is exactly the kind of change that can lose or double
-    work while every output still looks well-formed, so these check the invariants rather
-    than the RMSF numbers: shards partition the artifacts, WT appears once, a missing shard
-    refuses to merge, and the merged deltas equal the single-process deltas.
-
-    The per-artifact RMSF computation is faked out -- it needs USalign and the external
-    drive, and what is under test is the slicing and merging, not the alignment.
-    """
-
-    N_ARTIFACTS = 11   # deliberately not a multiple of the shard count
-
-    def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
-        root = Path(self.tmp.name)
-        (root / "rmsf").mkdir(parents=True)
-        (root / "rmsf" / "global_wt_reference.pdb").write_text("FAKE REFERENCE\n")
-
-        # WT first so it is picked as the reference; the rest are mutants.
-        self.artifacts = [root / "TEST_WT_model.tar.gz"] + [
-            root / f"TEST_A{i}G_model.tar.gz" for i in range(1, self.N_ARTIFACTS)
-        ]
-        for p in self.artifacts:
-            p.touch()
-
-        self.config = sm.StructureMetricsConfig(
-            mut_name="TEST", read_root_path=str(root), chain_ids=("A",), source_type="tar",
-            plddt_dir=root / "plddt", output_dir=root,
-        )
-
-        def fake_rmsf(artifact, **kwargs):
-            # RMSF varying by artifact so a mix-up between artifacts is detectable.
-            seed = abs(hash(Path(artifact).name)) % 997
-            df = pd.DataFrame({
-                "chain": ["A"] * 5,
-                "resid": list(range(1, 6)),
-                "resname": ["ALA"] * 5,
-                "rmsf": [(seed + r) / 100.0 for r in range(5)],
-            })
-            return None, df, None
-
-        self._orig_iter = sm.iter_artifacts
-        self._orig_map = sm.rmsf_map_ca_from_tar
-        sm.iter_artifacts = lambda cfg: list(self.artifacts)
-        sm.rmsf_map_ca_from_tar = fake_rmsf
-
-    def tearDown(self):
-        sm.iter_artifacts = self._orig_iter
-        sm.rmsf_map_ca_from_tar = self._orig_map
-        self.tmp.cleanup()
-
-    def _run_shard(self, i, n):
-        return sm.run_rmsf_batch_vs_wt(
-            self.config, show_progress=False, global_wt_batch_mode=True,
-            reuse_existing=False, allow_recompute_if_missing=True,
-            shard=(i, n), output_suffix=f"shard{i}of{n}",
-            compute_deltas=False, reuse_global_reference=True,
-        )
-
-    def test_shards_partition_the_artifacts_with_wt_exactly_once(self):
-        n = 4
-        seen = []
-        for i in range(n):
-            seen.append(list(self._run_shard(i, n)["summary_df"]["artifact"]))
-        flat = [a for s in seen for a in s]
-
-        self.assertEqual(len(flat), len(set(flat)), "an artifact was processed by two shards")
-        self.assertEqual(len(flat), self.N_ARTIFACTS, "shards did not cover every artifact")
-        wt = [a for a in flat if "WT" in a.upper()]
-        self.assertEqual(len(wt), 1, f"WT must be computed exactly once, got {len(wt)}")
-        self.assertTrue(any("WT" in a.upper() for a in seen[0]), "WT belongs to shard 0")
-        # Striding, not contiguous blocks: sizes differ by at most one.
-        sizes = sorted(len(s) for s in seen)
-        self.assertLessEqual(sizes[-1] - sizes[0], 2, f"shard sizes are lopsided: {sizes}")
-
-    def test_more_shards_than_artifacts_still_covers_everything(self):
-        n = self.N_ARTIFACTS + 3
-        flat = [a for i in range(n) for a in self._run_shard(i, n)["summary_df"]["artifact"]]
-        self.assertEqual(sorted(flat), sorted(p.stem.replace(".tar", "") for p in self.artifacts))
-
-    def test_merge_refuses_when_a_shard_is_missing(self):
-        n = 4
-        for i in range(n - 1):          # deliberately skip the last shard
-            self._run_shard(i, n)
-        with self.assertRaises(FileNotFoundError) as ctx:
-            sm.merge_rmsf_shards(self.config, n_shards=n)
-        self.assertIn("missing RMSF shard", str(ctx.exception))
-
-    def test_merge_refuses_when_artifact_count_falls_short(self):
-        n = 4
-        for i in range(n):
-            self._run_shard(i, n)
-        with self.assertRaises(ValueError) as ctx:
-            sm.merge_rmsf_shards(self.config, n_shards=n, expected_artifacts=self.N_ARTIFACTS + 1)
-        self.assertIn("were discovered on disk", str(ctx.exception))
-
-    def test_sharded_then_merged_equals_single_process(self):
-        """The point of the whole exercise: parallelising must not change the numbers."""
-        single = sm.run_rmsf_batch_vs_wt(
-            self.config, show_progress=False, global_wt_batch_mode=True,
-            reuse_existing=False, allow_recompute_if_missing=True,
-            output_suffix="single", reuse_global_reference=True,
-        )
-        for i in range(4):
-            self._run_shard(i, 4)
-        merged = sm.merge_rmsf_shards(self.config, n_shards=4,
-                                      expected_artifacts=self.N_ARTIFACTS)
-
-        key = ["artifact", "chain", "resid"]
-        a = single["all_rmsf_df"].sort_values(key).reset_index(drop=True)
-        b = merged["all_rmsf_df"].sort_values(key).reset_index(drop=True)
-        pd.testing.assert_frame_equal(a[key + ["rmsf"]], b[key + ["rmsf"]])
-
-        a = single["delta_summary_df"].sort_values("artifact").reset_index(drop=True)
-        b = merged["delta_summary_df"].sort_values("artifact").reset_index(drop=True)
-        self.assertFalse(a.empty, "the single-process run produced no deltas to compare")
-        pd.testing.assert_frame_equal(a, b, check_like=True)
-
-    def test_duplicated_wt_baseline_raises_instead_of_fanning_out(self):
-        """If WT ever appeared in two shards, an inner merge would multiply every mutant
-        row and delta_mean would quietly average over duplicates."""
-        df = pd.DataFrame({
-            "artifact": ["TEST_WT_model", "TEST_WT_model", "TEST_A1G_model"],
-            "chain": ["A", "A", "A"], "resid": [1, 1, 1],
-            "resname": ["ALA"] * 3, "rmsf": [1.0, 1.0, 2.0],
-        })
-        with self.assertRaises(ValueError) as ctx:
-            sm._compute_rmsf_deltas(df, reference_hint="WT")
-        self.assertIn("duplicated", str(ctx.exception))
-
-
 class TestPlddtProfileLoader(unittest.TestCase):
     """load_plddt_profile AND load_plddt_matrix must drop the 0..N-1 residue-index column.
 
@@ -796,24 +455,6 @@ class TestPlddtProfileLoader(unittest.TestCase):
         df.to_csv(path, index=False)
         return path
 
-    def test_index_column_is_dropped_from_the_ensemble(self):
-        for header0 in ("Unnamed: 0", "", "Residue"):
-            with tempfile.TemporaryDirectory() as tmp:
-                path = self._write_csv(tmp, header0 or "Unnamed: 0")
-                idx, mean, std = sm.load_plddt_profile(path)
-                np.testing.assert_array_equal(idx, [0, 1, 2])
-                # Mean is over the two sample columns only, NOT the index column.
-                np.testing.assert_allclose(mean, [91.0, 81.0, 71.0])
-                np.testing.assert_allclose(std, [1.0, 1.0, 1.0])
-
-    def test_index_kept_when_it_is_not_a_plain_range(self):
-        """A leading column that is not exactly 0..N-1 is real data and stays."""
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "PROT_A1G_plddt_values.csv"
-            pd.DataFrame({"seed-1_sample-0": [90.0, 80.0],
-                          "seed-1_sample-1": [92.0, 82.0]}).to_csv(path, index=False)
-            _, mean, _ = sm.load_plddt_profile(path)
-            np.testing.assert_allclose(mean, [91.0, 81.0])
 
     def test_load_plddt_matrix_drops_the_index_column(self):
         """load_plddt_matrix must return samples only, so row means are true pLDDT means."""
@@ -823,229 +464,9 @@ class TestPlddtProfileLoader(unittest.TestCase):
             self.assertEqual(matrix.shape, (3, 2), "index column should have been dropped")
             np.testing.assert_allclose(matrix.mean(axis=1), [91.0, 81.0, 71.0])
 
-    def test_exemplar_distribution_panels_are_paginated_and_share_raw_samples(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            paths = {}
-            for name, offset, n_samples in (
-                ("TEST_WT", 0.0, 4),
-                ("TEST_A12G", -4.0, 3),
-                ("TEST_V14L", -1.0, 2),
-            ):
-                frame = {"Residue": np.arange(5)}
-                for sample in range(n_samples):
-                    frame[f"sample-{sample}"] = (
-                        np.linspace(80.0, 96.0, 5) + offset + sample * 0.4
-                    )
-                path = root / f"{name}_plddt_values.csv"
-                pd.DataFrame(frame).to_csv(path, index=False)
-                paths[name] = path
-
-            result = sm.plot_plddt_exemplar_distributions_by_residue(
-                paths["TEST_WT"], paths["TEST_A12G"], paths["TEST_V14L"],
-                driver_label="Driver A12G", passenger_label="Passenger V14L",
-                residue_start=10, panels_per_page=4, ncols=2,
-                kde_bandwidth=0.7,
-                out_base=root / "TEST_plddt_exemplar_distributions",
-            )
-
-            self.assertEqual(result["n_residues"], 5)
-            self.assertEqual(result["n_pages"], 2)
-            self.assertEqual(result["kde_bandwidth"], 0.7)
-            self.assertEqual(
-                result["sample_counts"],
-                {"WT": 4, "Driver A12G": 3, "Passenger V14L": 2},
-            )
-            self.assertEqual(
-                [(marker["site"], marker["row_index"], marker["residue_number"])
-                 for marker in result["site_markers"]],
-                [("D", 2, 12), ("P", 4, 14)],
-            )
-            self.assertTrue(Path(result["pdf_path"]).is_file())
-            self.assertEqual(
-                [Path(path).name for path in result["page_paths"]],
-                [
-                    "TEST_plddt_exemplar_distributions_residues_10-13.png",
-                    "TEST_plddt_exemplar_distributions_residues_14-14.png",
-                ],
-            )
-            self.assertTrue(all(Path(path).stat().st_size > 0 for path in result["page_paths"]))
-
-    def test_exemplar_distribution_marks_coincident_sites_on_every_selected_chain(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            paths = {}
-            for name in ("TEST_WT", "TEST_A2G", "TEST_A2V"):
-                path = root / f"{name}_plddt_values.csv"
-                pd.DataFrame({
-                    "Residue": np.arange(4),
-                    "sample-0": [80.0, 82.0, 84.0, 86.0],
-                    "sample-1": [81.0, 83.0, 85.0, 87.0],
-                }).to_csv(path, index=False)
-                paths[name] = path
-
-            result = sm.plot_plddt_exemplar_distributions_by_residue(
-                paths["TEST_WT"], paths["TEST_A2G"], paths["TEST_A2V"],
-                residue_segments=[
-                    {"chain_id": "A", "length": 2},
-                    {"chain_id": "B", "length": 2},
-                ],
-                driver_site_chains=["A", "B"],
-                passenger_site_chains=["A", "B"],
-                panels_per_page=4, ncols=2,
-                out_base=root / "TEST_multichain_distributions",
-            )
-
-            self.assertEqual(
-                [(marker["site"], marker["chain_id"], marker["row_index"])
-                 for marker in result["site_markers"]],
-                [("D", "A", 1), ("D", "B", 3),
-                 ("P", "A", 1), ("P", "B", 3)],
-            )
-
-    def test_exemplar_distribution_rejects_incomplete_segment_mapping(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            paths = {}
-            for name in ("TEST_WT", "TEST_A2G", "TEST_V3L"):
-                path = root / f"{name}_plddt_values.csv"
-                pd.DataFrame({
-                    "Residue": np.arange(4),
-                    "sample-0": [80.0, 82.0, 84.0, 86.0],
-                }).to_csv(path, index=False)
-                paths[name] = path
-
-            with self.assertRaisesRegex(ValueError, "describe 3 residues"):
-                sm.plot_plddt_exemplar_distributions_by_residue(
-                    paths["TEST_WT"], paths["TEST_A2G"], paths["TEST_V3L"],
-                    residue_segments=[{"chain_id": "A", "length": 3}],
-                    out_base=root / "TEST_bad_mapping",
-                )
-
-    def test_d1_is_zero_when_mutant_equals_wt(self):
-        """The bug's signature: identical mutant/WT pLDDT gave nonzero D1 because the
-        index column was diluted differently across unequal sample counts. With the fix,
-        D1 must be exactly 0 when the (non-index) values match, regardless of column count."""
-        with tempfile.TemporaryDirectory() as tmp:
-            wt = Path(tmp) / "PROT_WT_plddt_values.csv"
-            mut = Path(tmp) / "PROT_A1G_plddt_values.csv"
-            # Same per-residue pLDDT, but WT has 2 samples and the mutant has 3.
-            pd.DataFrame({"Unnamed: 0": [0, 1, 2],
-                          "s0": [90.0, 80.0, 70.0], "s1": [90.0, 80.0, 70.0]}).to_csv(wt, index=False)
-            pd.DataFrame({"Unnamed: 0": [0, 1, 2],
-                          "s0": [90.0, 80.0, 70.0], "s1": [90.0, 80.0, 70.0],
-                          "s2": [90.0, 80.0, 70.0]}).to_csv(mut, index=False)
-            wt_summary = sm.summarize_wild_type(wt)
-            row = sm.compute_feature_row(sm.load_plddt_matrix(mut),
-                                         wt_matrix=wt_summary["wt_matrix"])
-            self.assertAlmostEqual(row["d1_mean"], 0.0, places=9)
-
 
 class TestPerResiduePlddtKs(unittest.TestCase):
-    def test_detects_distribution_change_hidden_by_equal_means(self):
-        # Both ensembles have mean pLDDT 5 at residue 0, so a mean-only metric
-        # cannot see that one is bimodal and the other is concentrated at 5.
-        wt = np.array([
-            [0, 0, 0, 0, 10, 10, 10, 10],
-            [80, 81, 82, 83, 84, 85, 86, 87],
-        ], dtype=float)
-        mutant = np.array([
-            [5, 5, 5, 5, 5, 5, 5, 5],
-            [80, 81, 82, 83, 84, 85, 86, 87],
-        ], dtype=float)
 
-        result = sm.compute_per_residue_plddt_ks(wt, mutant)
-
-        self.assertEqual(list(result["residue_index"]), [0, 1])
-        self.assertAlmostEqual(result.loc[0, "ks_statistic"], 0.5)
-        self.assertAlmostEqual(result.loc[1, "ks_statistic"], 0.0)
-        self.assertEqual(result.loc[1, "ks_pvalue"], 1.0)
-
-    def test_fdr_is_applied_across_residues_and_nans_are_dropped_per_row(self):
-        wt = np.array([
-            [0.0] * 20,
-            [1.0, np.nan] + [np.nan] * 18,
-        ])
-        mutant = np.array([
-            [1.0] * 20,
-            [1.0, 1.0] + [np.nan] * 18,
-        ])
-
-        result = sm.compute_per_residue_plddt_ks(wt, mutant)
-
-        self.assertTrue(bool(result.loc[0, "ks_significant_fdr"]))
-        # One finite WT observation still defines the KS statistic (here 0: 1 vs 1,1),
-        # but the test cannot reject from it.
-        self.assertEqual(result.loc[1, "n_wt"], 1)
-        self.assertEqual(result.loc[1, "ks_statistic"], 0.0)
-        self.assertFalse(bool(result.loc[1, "ks_significant_fdr"]))
-
-    def test_residue_count_mismatch_is_rejected(self):
-        with self.assertRaisesRegex(ValueError, "residue-count mismatch"):
-            sm.compute_per_residue_plddt_ks(np.ones((2, 3)), np.ones((3, 3)))
-
-    def test_residue_profile_has_classifier_ready_summaries(self):
-        wt = np.array([[0.0] * 20, [5.0] * 20])
-        mutant = np.array([[1.0] * 20, [5.0] * 20])
-
-        profile = sm.compute_per_residue_plddt_ks(wt, mutant)
-        row = sm.summarize_per_residue_plddt_ks(profile)
-
-        self.assertAlmostEqual(row["plddt_ks_mean"], 0.5)
-        self.assertAlmostEqual(row["plddt_ks_max"], 1.0)
-        self.assertAlmostEqual(row["plddt_ks_fraction_fdr"], 0.5)
-        self.assertEqual(row["plddt_ks_n_residues_tested"], 2)
-        self.assertEqual(row["plddt_ks_min_wt_samples"], 20)
-        self.assertEqual(row["plddt_ks_min_mutant_samples"], 20)
-
-    def test_existing_feature_table_is_not_silently_changed(self):
-        wt = np.array([[80.0, 81.0], [90.0, 91.0]])
-        mutant = np.array([[79.0, 80.0], [90.0, 92.0]])
-
-        existing_features = sm.compute_feature_row(mutant, wt_matrix=wt)
-
-        self.assertFalse(
-            any(name.startswith("plddt_ks_") for name in existing_features),
-            "KS must be evaluated as a separate metric before entering the classifier",
-        )
-
-    def test_table_builder_preserves_the_per_residue_results(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            wt_path = Path(tmp) / "TEST_WT_plddt_values.csv"
-            mutant_path = Path(tmp) / "TEST_A1G_plddt_values.csv"
-            columns = {f"sample_{i}": [0.0, 5.0] for i in range(20)}
-            pd.DataFrame({"Residue": [0, 1], **columns}).to_csv(wt_path, index=False)
-            mutant_columns = {f"sample_{i}": [1.0, 5.0] for i in range(20)}
-            pd.DataFrame({"Residue": [0, 1], **mutant_columns}).to_csv(
-                mutant_path, index=False
-            )
-
-            summary, residues = sm.build_plddt_ks_tables([mutant_path, wt_path])
-
-        self.assertEqual(len(summary), 1)
-        self.assertEqual(summary.loc[0, "mutation_code"], "A1G")
-        self.assertEqual(summary.loc[0, "status"], "ok")
-        self.assertTrue(np.isfinite(summary.loc[0, "d1_mean"]))
-        self.assertEqual(len(residues), 2)
-        self.assertEqual(set(residues["mutation_code"]), {"A1G"})
-        self.assertEqual(set(residues["residue_index"]), {0, 1})
-
-    def test_table_builder_rejects_an_ambiguous_wt_reference(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            paths = []
-            for name in ("TEST_WT_plddt_values.csv", "TEST_again_WT_plddt_values.csv"):
-                path = Path(tmp) / name
-                pd.DataFrame({"Residue": [0], "sample_0": [90.0]}).to_csv(
-                    path, index=False
-                )
-                paths.append(path)
-            mutant = Path(tmp) / "TEST_A1G_plddt_values.csv"
-            pd.DataFrame({"Residue": [0], "sample_0": [80.0]}).to_csv(
-                mutant, index=False
-            )
-
-            with self.assertRaisesRegex(ValueError, "Multiple WT"):
-                sm.build_plddt_ks_tables([*paths, mutant])
 
     def test_stage_maps_raw_tp53_wt_artifact_to_canonical_plddt_name(self):
         from metric_analysis.pipeline.orchestration import run_structure_metrics as rsm
@@ -1078,127 +499,6 @@ class TestPerResiduePlddtKs(unittest.TestCase):
             )
 
         self.assertEqual(resolved, selected)
-
-    def test_vectorized_sweep_ks_matches_canonical_residue_tests_with_ties(self):
-        from metric_analysis.pipeline.library import ensemble_aware_pipeline as eap
-
-        wt = np.array([
-            [0, 0, 1, 2],
-            [5, 5, 5, 5],
-            [1, 2, 3, 4],
-        ], dtype=float)
-        mutant = np.array([
-            [0, 1, 1, 3],
-            [5, 6, 6, 6],
-            [4, 3, 2, 1],
-        ], dtype=float)
-        canonical = sm.summarize_per_residue_plddt_ks(
-            sm.compute_per_residue_plddt_ks(wt, mutant)
-        )
-        swept = eap.compute_plddt_ks_for_selected_columns(
-            wt, mutant, np.arange(4), np.arange(4)
-        )
-
-        self.assertAlmostEqual(swept["plddt_ks_mean"], canonical["plddt_ks_mean"])
-        self.assertAlmostEqual(swept["plddt_ks_median"], canonical["plddt_ks_median"])
-        self.assertAlmostEqual(swept["plddt_ks_max"], canonical["plddt_ks_max"])
-
-    def test_ks_sweep_defines_n_one_and_writes_auc_curve(self):
-        from metric_analysis.pipeline.library import ensemble_aware_pipeline as eap
-
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            plddt_dir = root / "plddt"
-            plddt_dir.mkdir()
-            wt_path = plddt_dir / "TEST_WT_plddt_values.csv"
-
-            def write_matrix(path, value):
-                frame = pd.DataFrame(
-                    {f"sample_{i}": np.full(5, value, dtype=float) for i in range(4)}
-                )
-                frame.index.name = "Residue"
-                frame.to_csv(path)
-
-            write_matrix(wt_path, 80.0)
-            mutant_paths = []
-            for allele, value in (
-                ("A10G", 90.0), ("A11G", 90.0),
-                ("A20G", 80.0), ("A21G", 80.0),
-            ):
-                path = plddt_dir / f"TEST_{allele}_plddt_values.csv"
-                write_matrix(path, value)
-                mutant_paths.append(path)
-
-            cfg = {
-                "output_prefix": "TEST",
-                "sweep_dir": root / "ensemble_sweeps",
-                "ensemble_sizes": [1, 2],
-                "ensemble_repeats_by_size": {1: 2, 2: 2},
-                "label_mode": "hotspot_range",
-                "hotspot_range": [10, 11],
-            }
-            result = eap.run_plddt_ks_ensemble_sweep(
-                cfg,
-                plddt_files=[wt_path, *mutant_paths],
-                wt_path=wt_path,
-                force=True,
-            )
-
-            n1 = result["raw"].loc[result["raw"]["ensemble_size"] == 1]
-            n2 = result["summary"].loc[
-                result["summary"]["ensemble_size"] == 2, "auc_mean"
-            ].iloc[0]
-            # N=1 is the discordance rate: 1 where 90 != 80, 0 where 80 == 80.
-            by_allele = n1.groupby("Allele")["plddt_ks_mean"].mean()
-            self.assertEqual(by_allele.to_dict(),
-                             {"A10G": 1.0, "A11G": 1.0, "A20G": 0.0, "A21G": 0.0})
-            n1_auc = result["summary"].loc[
-                result["summary"]["ensemble_size"] == 1, "auc_mean"
-            ].iloc[0]
-            self.assertAlmostEqual(n1_auc, 1.0)
-            self.assertAlmostEqual(n2, 1.0)
-            self.assertTrue(
-                (root / "plots" / "TEST_pLDDT_KS_N_sweep_AUC.png").exists()
-            )
-
-    def test_profile_and_d1_comparison_figures_are_written(self):
-        summary = pd.DataFrame({
-            "mutation_code": ["A1G", "A2G", "A3G", "A4G"],
-            "mutation_type": ["Driver", "Driver", "Passenger", "Passenger"],
-            "plddt_ks_mean": [0.70, 0.55, 0.20, 0.30],
-            "d1_mean": [0.08, 0.05, 0.01, 0.02],
-        })
-        residue_rows = []
-        for mutation, base in zip(summary["mutation_code"], [0.7, 0.5, 0.2, 0.3]):
-            for residue in range(4):
-                residue_rows.append({
-                    "mutation_code": mutation,
-                    "residue_index": residue,
-                    "ks_statistic": base + residue * 0.01,
-                    "ks_significant_fdr": base > 0.4,
-                })
-        residues = pd.DataFrame(residue_rows)
-
-        with tempfile.TemporaryDirectory() as tmp:
-            profile_path = Path(tmp) / "profile.png"
-            comparison_path = Path(tmp) / "vs_d1.png"
-            profile = sm.plot_plddt_ks_profile_by_class(
-                residues, summary, out_path=profile_path,
-                bootstrap_resamples=50, bootstrap_seed=7,
-            )
-            comparison = sm.plot_plddt_ks_vs_d1(
-                summary, dataset_name="TEST", out_path=comparison_path
-            )
-            self.assertTrue(profile_path.exists())
-            self.assertTrue(comparison_path.exists())
-            self.assertGreater(profile_path.stat().st_size, 0)
-            self.assertGreater(comparison_path.stat().st_size, 0)
-            legend = [text.get_text() for text in profile["figure"].axes[0].get_legend().texts]
-            self.assertTrue(all("bootstrap SD" in text for text in legend))
-            self.assertEqual(profile["bootstrap_resamples"], 50)
-            self.assertEqual(profile["bootstrap_seed"], 7)
-        plt.close(profile["figure"])
-        plt.close(comparison["figure"])
 
 
 class TestPerResiduePlddtDistributionMetrics(unittest.TestCase):
@@ -1303,14 +603,13 @@ class TestPerResiduePlddtDistributionMetrics(unittest.TestCase):
         self.assertTrue(np.isnan(row["outlier_fraction"]))
         self.assertTrue(np.isfinite(row["wasserstein"]))
 
-    def test_summary_reproduces_d1_and_uses_nonmax_reductions(self):
+    def test_summary_uses_nonmax_reductions(self):
         wt = np.array([[10, 10], [20, 20]], dtype=float)
         mutant = np.array([[12, 12], [18, 18]], dtype=float)
         residue = sm.compute_per_residue_plddt_distribution_metrics(wt, mutant)
 
         summary = sm.summarize_per_residue_plddt_distribution_metrics(residue)
 
-        self.assertAlmostEqual(summary["d1_from_distribution_mean"], 0.15)
         self.assertAlmostEqual(summary["plddt_w1_mean"], 2.0)
         self.assertAlmostEqual(summary["plddt_w1_shape_fraction"], 0.0)
         self.assertAlmostEqual(summary["plddt_outlier_threshold"], 0.01)
@@ -1333,7 +632,10 @@ class TestPerResiduePlddtDistributionMetrics(unittest.TestCase):
                     "outlier_threshold": 0.01,
                     "shape_excess_relative": offset / 10 + residue * 0.0001,
                 })
-        result = sm.plot_plddt_distribution_profile_by_class(
+        from metric_analysis.pipeline.library.plddt_distribution import (
+            plot_plddt_distribution_profile_by_class,
+        )
+        result = plot_plddt_distribution_profile_by_class(
             pd.DataFrame(rows), summary,
             bootstrap_resamples=50, bootstrap_seed=9,
         )
@@ -1343,38 +645,8 @@ class TestPerResiduePlddtDistributionMetrics(unittest.TestCase):
         self.assertEqual(result["bootstrap_seed"], 9)
         plt.close(result["figure"])
 
-    def test_d1_and_ratio_profiles_use_reproducible_bootstrap_sd(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
 
-            def write_profile(name, values):
-                path = root / name
-                pd.DataFrame({"Residue": [0, 1], "s0": values, "s1": values}).to_csv(
-                    path, index=False,
-                )
-                return path
-
-            wt = write_profile("TEST_WT_plddt_values.csv", [80.0, 80.0])
-            drivers = [
-                write_profile("TEST_A1G_plddt_values.csv", [70.0, 75.0]),
-                write_profile("TEST_A2G_plddt_values.csv", [72.0, 74.0]),
-            ]
-            passengers = [
-                write_profile("TEST_A3G_plddt_values.csv", [79.0, 80.0]),
-                write_profile("TEST_A4G_plddt_values.csv", [78.0, 79.0]),
-            ]
-            d1 = sm.plot_d1_profile_by_class(
-                wt, drivers, passengers, bootstrap_resamples=50, bootstrap_seed=3,
-            )
-            ratio = sm.plot_plddt_ratio_by_class(
-                wt, drivers, passengers, bootstrap_resamples=50, bootstrap_seed=3,
-            )
-
-        self.assertEqual(d1["bootstrap_resamples"], 50)
-        self.assertEqual(ratio["bootstrap_resamples"], 50)
-        plt.close("all")
-
-    def test_table_builder_preserves_residue_effects_and_d1_audit(self):
+    def test_table_builder_preserves_residue_effects(self):
         with tempfile.TemporaryDirectory() as tmp:
             wt_path = Path(tmp) / "TEST_WT_plddt_values.csv"
             mutant_path = Path(tmp) / "TEST_A1G_plddt_values.csv"
@@ -1396,7 +668,7 @@ class TestPerResiduePlddtDistributionMetrics(unittest.TestCase):
         self.assertEqual(len(summary), 1)
         self.assertEqual(len(residues), 2)
         self.assertEqual(summary.loc[0, "status"], "ok")
-        self.assertLess(summary.loc[0, "d1_consistency_abs_error"], 1e-12)
+        self.assertNotIn("d1_mean", summary)
         self.assertIn("plddt_outlier_score_mean", summary)
         self.assertIn("outlier_score", residues)
         self.assertTrue((residues["outlier_threshold"] == 0.01).all())

@@ -11,7 +11,7 @@ the panels in use (the check this script was validated with).
        (the 2,000-split background the paper's panel uses, make_fig1f_panel.py)
     g  make_panels_gh.panel_g from the score caches (published: v6_ca, fingerprint
        d61d29328362; release: the 25-seed config's, whose MSH6 rows are identical)
-    h  article_figures.panel_nsweep_metrics from Figure 2's per-gene AUC table
+    h  nsweep_panel.panel_nsweep_metrics from Figure 2's per-gene AUC table
        (annotation_stages stage `curves`; MSH6 identical to the v6 table the paper drew)
 
 Writes to panels/ under the stems the assembler looks for. Nothing else is touched.
@@ -116,7 +116,7 @@ def panel_g():
 
 
 def panel_h():
-    from drift import article_figures as A
+    from figures.figure1.layout import nsweep_panel as A
     A.VALUES.clear()
     A.panel_nsweep_metrics(OUT, GENE, f"{GENE}_Nsweep_resKS", "F1h_resks",
                            columns=(("ks_raw", "KS-score", A.ACC),), row4_style=True,

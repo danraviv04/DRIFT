@@ -132,6 +132,8 @@ REFERENCE_BY_CONFIG = {
     "49028c16cbb3": ({g: r for g, r in V6_REFERENCE.items() if g != "POLE"}, V6_CHANGED | {"POLE"}),
     # 2026-11-03: the same six genes, FOXA1 removed from the config (no annotation gene changes).
     "97f1cdbfda8e": ({g: r for g, r in V6_REFERENCE.items() if g != "POLE"}, V6_CHANGED | {"POLE"}),
+    # v1.1: the D1 section renamed and D1 removed (no descriptor or cohort changes).
+    "22e178adaa91": ({g: r for g, r in V6_REFERENCE.items() if g != "POLE"}, V6_CHANGED | {"POLE"}),
 }
 
 

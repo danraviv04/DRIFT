@@ -29,7 +29,7 @@ ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / 'analyses/coordinates/s8_representatives'))
 import n90_comparison as n90  # noqa: E402
-from drift.protein_config import load_protein_configs  # noqa: E402
+from drift.protein_config import load_protein_configs, protein_config_fingerprint  # noqa: E402
 from metric_analysis.pipeline.library.descriptor_metrics import residue_ks  # noqa: E402
 from metric_analysis.pipeline.library.canonical_cohort import _existing_repo_path  # noqa: E402
 
@@ -38,7 +38,7 @@ OUT = HERE / 'results'
 # written. Cohort and comparison tables come from the 25-seed runner's side stages.
 RUN = ROOT / 'analyses/annotation/stages'
 CACHE = ROOT / 'drift/cache'
-FP = '97f1cdbfda8e'  # published: 49028c16cbb3, which also held FOXA1
+FP = protein_config_fingerprint()  # published: 49028c16cbb3, which also held FOXA1
 COHORT = ROOT / 'analyses/annotation/stages/side/annotation_cohort_25seed.csv'
 PUBLISHED_S8 = ROOT / 'analyses/annotation/stages/side/s8_n90_results/auc_summary.csv'
 MAIN_TEXT_KS = ROOT / 'analyses/annotation/stages/side/ks_auc_ci/ks_auc_ci_pole25_cache.csv'
@@ -89,7 +89,7 @@ def calculate():
     configs = load_protein_configs()
     reference = []
     for seed in SEEDS:
-        path = CACHE / f'labeled_size90_seed{seed}_ratio_of_means_proteins{FP}_esfeat6.csv'
+        path = CACHE / f'labeled_size90_seed{seed}_proteins{FP}_esfeat7.csv'
         sha(path)
         reference.append(pd.read_csv(path).assign(seed=seed))
     reference = pd.concat(reference).set_index(['gene', 'mutation', 'seed'])
@@ -97,7 +97,7 @@ def calculate():
     for gene in n90.GENES:
         started = time.monotonic()
         records = cohort[cohort.protein.eq(gene)].to_dict('records')
-        cfg = configs[gene]['d1']
+        cfg = configs[gene]['structures']
         source = records[0]['wt_source_file']
         assert {r['wt_source_file'] for r in records} == {source}
         wt, wt_cols = n90.load_matrix(records[0], wt=True)

@@ -1,4 +1,4 @@
-"""Pinned WT references must give D1 and ensemble descriptors the same N draws."""
+"""Pinned WT references must give the variant table and ensemble descriptors the same N draws."""
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,7 +9,7 @@ import pandas as pd
 
 from drift import structure_draws as runtime
 # Production imports core first; it reloads the runtime before ES binds aliases.
-from drift import core, ensemble_shift as es
+from drift import ensemble_shift as es
 from drift.protein_config import load_protein_configs
 
 
@@ -35,12 +35,12 @@ class TestPinnedWT(unittest.TestCase):
                                 expected_sources=1, expected_residues=4)
 
     def test_production_config_pins_construct(self):
-        cfg = load_protein_configs()["POLE"]["d1"]
+        cfg = load_protein_configs()["POLE"]["structures"]
         self.assertEqual(cfg["wt_csv_glob"], self.name)
         self.assertEqual(cfg["wt_csv_expected_sources"], 1)
         self.assertEqual(cfg["plddt_expected_residues"], 204)
 
-    def test_equal_n_nested_draws_and_d1_reference_agree(self):
+    def test_equal_n_nested_draws_and_variant_table_agree(self):
         previous = []
         for n in (1, 2, 5, 10, 20, 40, 60, 90, 125):
             with self.subTest(n=n):
@@ -53,18 +53,18 @@ class TestPinnedWT(unittest.TestCase):
                     expected_residues=4)
                 self.assertEqual(count, n)
                 np.testing.assert_allclose(ref.loc[matrix.index], matrix.mean(axis=1), atol=1e-5)
-                d1, audit = runtime.build_d1_table(
+                rows, audit = runtime.build_variant_table(
                     {"POLE": self.cfg}, max_structures_per_variant=n, random_seed=42)
                 self.assertEqual(audit.wt_sources.item(), 1)
                 self.assertEqual(audit.wt_structures.item(), n)
-                self.assertEqual(d1.Num_Structures.item(), n)
+                self.assertEqual(rows.Num_Structures.item(), n)
         self.assertFalse(self.reference(90).equals(self.reference(90, seed=43)))
 
     def test_ambiguous_or_missing_reference_fails_before_n1_sampling(self):
         with self.assertRaisesRegex(ValueError, "expected 1 CSV"):
             es._wt_reference(self.root, "*WT*csv", "POLE", 1, 42, expected_sources=1)
         (self.root / self.name).unlink()
-        for build in (lambda: self.reference(1), lambda: runtime.build_d1_table(
+        for build in (lambda: self.reference(1), lambda: runtime.build_variant_table(
                 {"POLE": self.cfg}, max_structures_per_variant=1, random_seed=42)):
             with self.assertRaisesRegex(ValueError, "found 0"):
                 build()
@@ -74,14 +74,14 @@ class TestPinnedWT(unittest.TestCase):
             bad.to_csv(self.root / "POLE_A1V_plddt_values.csv")
             for build in (lambda: es.build_ensemble_shift_features(
                     {"POLE": self.cfg}, max_structures_per_variant=5, seed=42),
-                    lambda: runtime.build_d1_table(
+                    lambda: runtime.build_variant_table(
                         {"POLE": self.cfg}, max_structures_per_variant=5, random_seed=42)):
                 with self.assertRaisesRegex(ValueError, "expected residue rows"):
                     build()
 
     def test_undersized_pool_fails_in_both_readers(self):
         self.wt.iloc[:, :3].to_csv(self.root / self.name)
-        for build in (lambda: self.reference(5), lambda: runtime.build_d1_table(
+        for build in (lambda: self.reference(5), lambda: runtime.build_variant_table(
                 {"POLE": self.cfg}, max_structures_per_variant=5, random_seed=42)):
             with self.assertRaisesRegex(ValueError, "only 3 available"):
                 build()
@@ -90,7 +90,7 @@ class TestPinnedWT(unittest.TestCase):
         cfg = dict(self.cfg, read_root=self.root / "missing")
         for build in (lambda: es.build_ensemble_shift_features(
                 {"POLE": cfg}, max_structures_per_variant=2, seed=42),
-                lambda: runtime.build_d1_table(
+                lambda: runtime.build_variant_table(
                     {"POLE": cfg}, max_structures_per_variant=2, random_seed=42)):
             with self.assertRaisesRegex(ValueError, "pinned WT root does not exist"):
                 build()
@@ -101,12 +101,12 @@ class TestPinnedWT(unittest.TestCase):
         stray.write_text("invalid CIF: the CSV pin must prevent this being read")
         for dirs_tars in (False, True):
             cfg = dict(self.cfg, dirs_tars=dirs_tars)
-            _, audit = runtime.build_d1_table(
+            _, audit = runtime.build_variant_table(
                 {"POLE": cfg}, max_structures_per_variant=2, random_seed=42)
             self.assertEqual(audit.wt_structures.item(), 2)
         (self.root / self.name).unlink()
         with self.assertRaisesRegex(ValueError, "found 0"):
-            runtime.build_d1_table(
+            runtime.build_variant_table(
                 {"POLE": self.cfg}, max_structures_per_variant=2, random_seed=42)
 
     def test_wt_subset_is_shared_across_variants(self):

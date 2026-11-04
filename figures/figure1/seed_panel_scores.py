@@ -29,7 +29,7 @@ def load_scores(size=90, fingerprint=FINGERPRINT, genes=None):
     frames, sources = [], []
     for seed in SEEDS:
         path = REPO / "drift/cache" / (
-            f"labeled_size{size}_seed{seed}_ratio_of_means_proteins{fingerprint}_esfeat6.csv")
+            f"labeled_size{size}_seed{seed}_proteins{fingerprint}_esfeat7.csv")
         frame = pd.read_csv(path, usecols=["gene", "mutation", "label", SCORE])
         if genes is not None:
             frame = frame[frame.gene.isin(genes)]

@@ -172,7 +172,7 @@ def calculate():
     configs = load_protein_configs()
     reference = []
     for seed in SEEDS:
-        path = CACHE / f"labeled_size90_seed{seed}_ratio_of_means_proteins{FP}_esfeat6.csv"
+        path = CACHE / f"labeled_size90_seed{seed}_proteins{FP}_esfeat7.csv"
         sha(path)
         reference.append(pd.read_csv(path).assign(seed=seed))
     reference = pd.concat(reference).set_index(["gene", "mutation", "seed"])
@@ -180,7 +180,7 @@ def calculate():
     for gene in GENES:
         t0 = time.monotonic()
         records = c[c.protein.eq(gene)].to_dict("records")
-        cfg = configs[gene]["d1"]
+        cfg = configs[gene]["structures"]
         source = records[0]["wt_source_file"]
         assert {r["wt_source_file"] for r in records} == {source}
         folder = ROOT / "metric_analysis/structure_metrics" / gene / "ensemble_aware/cache_corefit"
@@ -253,7 +253,7 @@ def calculate():
                 rows.append({"gene": gene, "mutation": r["mutation_code"], "label": int(r["label"]),
                              "artifact": artifact, "seed": seed, "ks": float(ref.plddt_ks_residue),
                              "ks_direct": ks_direct, **vals,
-                             "afm_score": float(ref.afm_score), "d1_score": float(ref.d1_score)})
+                             "afm_score": float(ref.afm_score)})
                 # pipeline functions on the first variant of each gene, every seed
                 if len(seen) == 1:
                     diff = library_check(wt_frame, mframe, wd["idx"], idx, wt_si, m_si, centre_df, vals)
@@ -488,7 +488,7 @@ def ks_correlations(scores):
 
 def seed_frames(scores):
     """One frame per seed, sorted (gene, mutation) like size_sweep.load_cell."""
-    cols = ["gene", "mutation", "label", "afm_score", "d1_score", "ks", "posks"]
+    cols = ["gene", "mutation", "label", "afm_score", "ks", "posks"]
     out = []
     for s in SEEDS:
         f = (scores[scores.seed == s][cols].rename(columns={"ks": "plddt_ks_residue"})

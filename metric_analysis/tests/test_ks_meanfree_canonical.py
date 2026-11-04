@@ -30,14 +30,13 @@ class TestCanonicalMeanFreeAnalysis(unittest.TestCase):
         values = MODULE.descriptor_values(wt, mutant)
         self.assertGreater(values["ks_raw"], 0)
         self.assertTrue(np.isclose(values["ks_centred"], 0))
-        self.assertGreater(values["d1"], 0)
+        self.assertNotIn("d1", values)
 
     def test_centred_ks_retains_shape_change_with_equal_means(self):
         wt = np.array([[-1, -1, 1, 1], [-2, -1, 1, 2]], dtype=float) + 10
         mutant = np.array([[-2, 0, 0, 2], [-3, 0, 0, 3]], dtype=float) + 10
         self.assertTrue(np.allclose(wt.mean(axis=1), mutant.mean(axis=1)))
         values = MODULE.descriptor_values(wt, mutant)
-        self.assertTrue(np.isclose(values["d1"], 0))
         self.assertGreater(values["ks_centred"], 0)
         self.assertGreater(values["sd_ratio"], 0)
 
@@ -61,8 +60,8 @@ class TestCanonicalMeanFreeAnalysis(unittest.TestCase):
             second = MODULE.analyse_variant(record, sizes=(7, 3), seeds=(11, 12))
             key = lambda row: (row["seed"], row["requested_size"])
             self.assertEqual(
-                {key(r): r["d1"] for r in first},
-                {key(r): r["d1"] for r in second},
+                {key(r): r["ks_raw"] for r in first},
+                {key(r): r["ks_raw"] for r in second},
             )
 
     def test_uncertainty_tables_preserve_mean_seed_auc_endpoint(self):
@@ -81,8 +80,7 @@ class TestCanonicalMeanFreeAnalysis(unittest.TestCase):
                     "protein": "POLE", "mutation_code": f"A{i + 1}V",
                     "label": label, "requested_size": 10,
                     "seed_index": seed_index, "seed": 100 + seed_index,
-                    "d1": value, "ks_raw": value, "ks_centred": value,
-                    "sd_ratio": value,
+                    "ks_raw": value, "ks_centred": value, "sd_ratio": value,
                 })
         frame = pd.DataFrame(rows)
         expected = np.mean([
@@ -125,18 +123,18 @@ class TestCanonicalMeanFreeAnalysis(unittest.TestCase):
                 rows.append({
                     "protein": "POLE", "mutation_code": mutation_code,
                     "label": label, "requested_size": 10,
-                    "seed_index": seed_index, "d1": value, "ks_raw": value,
+                    "seed_index": seed_index, "ks_raw": value,
                     "ks_centred": value, "sd_ratio": value,
                 })
         per_variant = pd.DataFrame(rows)
         wt_null = pd.DataFrame({
             "protein": ["POLE"] * 3, "requested_size": [10] * 3,
-            "d1": [0.1, 0.2, 0.3], "ks_raw": [0.1, 0.2, 0.3],
+            "ks_raw": [0.1, 0.2, 0.3],
             "ks_centred": [0.1, 0.2, 0.3], "sd_ratio": [0.1, 0.2, 0.3],
         })
         result = MODULE.compare_observed_to_wt_null(per_variant, wt_null)
         self.assertEqual(set(result["variant_group"]), {"all", "driver", "passenger"})
-        self.assertEqual(len(result), 2 * 4 * 3)
+        self.assertEqual(len(result), 2 * 3 * 3)
         centred = result[result["metric"] == "ks_centred"]
         self.assertTrue(centred[centred["variant_group"] == "driver"]["n_variants"].eq(1).all())
         self.assertTrue(centred[centred["variant_group"] == "passenger"]["n_variants"].eq(1).all())

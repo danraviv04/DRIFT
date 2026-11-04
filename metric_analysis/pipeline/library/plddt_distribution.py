@@ -1,9 +1,8 @@
 """Distribution-sensitive WT-vs-mutant metrics for per-residue pLDDT ensembles.
 
-The established D1 score measures only the absolute relative change in the
-per-residue mean.  This module keeps D1 untouched and adds descriptive effect
-sizes that compare the complete empirical distributions.  No class labels enter
-any calculation in this file.
+Descriptive effect sizes that compare the complete empirical WT and mutant
+distributions at each residue, not only their means.  No class labels enter any
+calculation in this file.
 """
 
 from __future__ import annotations
@@ -332,7 +331,6 @@ def summarize_per_residue_plddt_distribution_metrics(
             "plddt_outlier_magnitude_mean": np.nan,
             "plddt_outlier_threshold": threshold,
             "plddt_outlier_n_residues": 0,
-            "d1_from_distribution_mean": np.nan,
             "plddt_distribution_n_residues": 0,
             "plddt_distribution_min_wt_samples": 0,
             "plddt_distribution_min_mutant_samples": 0,
@@ -371,9 +369,6 @@ def summarize_per_residue_plddt_distribution_metrics(
         "plddt_outlier_magnitude_mean": mean("outlier_mean_deviation"),
         "plddt_outlier_threshold": threshold,
         "plddt_outlier_n_residues": int(outlier_score.notna().sum()),
-        # Algebraically identical to the established per-residue D1 convention;
-        # retained as an audit column, not proposed as a new predictor.
-        "d1_from_distribution_mean": mean("location_shift_relative"),
         "plddt_distribution_n_residues": int(valid.sum()),
         "plddt_distribution_min_wt_samples": int(
             pd.to_numeric(residue_results.loc[valid, "n_wt"]).min()
@@ -535,61 +530,10 @@ def plot_plddt_distribution_summary(
     return {"figure": fig}
 
 
-def plot_plddt_distribution_vs_d1(
-    variant_summary: pd.DataFrame,
-    *,
-    dataset_name: str = "Dataset",
-    out_path: Path | str | None = None,
-) -> dict[str, object]:
-    """Compare new distribution metrics with D1 and report rank correlation."""
-    threshold = _threshold_from_frame(
-        variant_summary, "plddt_outlier_threshold"
-    )
-    metrics = (
-        ("plddt_w1_unit_mean", "Mean W1"),
-        ("plddt_outlier_score_mean", f"Outlier score (tau={threshold:g})"),
-        ("plddt_w1_shape_fraction", "Shape share of W1"),
-        ("plddt_energy_mean", "Energy distance"),
-        ("plddt_cvm_mean", "CvM effect"),
-    )
-    work = variant_summary[
-        variant_summary["mutation_type"].isin(["Driver", "Passenger"])
-    ].copy()
-    colors = {"Driver": "#d1495b", "Passenger": "#2e86ab"}
-    fig, axes = plt.subplots(2, 3, figsize=(16, 9))
-    correlations: dict[str, float] = {}
-    for ax, (metric, title) in zip(axes.ravel(), metrics):
-        x = pd.to_numeric(work["d1_mean"], errors="coerce")
-        y = pd.to_numeric(work[metric], errors="coerce")
-        valid = x.notna() & y.notna()
-        rho = float(x[valid].corr(y[valid], method="spearman"))
-        correlations[metric] = rho
-        for class_name in ("Driver", "Passenger"):
-            mask = valid & work["mutation_type"].eq(class_name)
-            ax.scatter(
-                x[mask], y[mask], s=18, alpha=0.55,
-                color=colors[class_name], label=class_name,
-            )
-        ax.set_title(f"{title} (Spearman rho={rho:.3f})")
-        ax.set_xlabel("D1 mean")
-        ax.set_ylabel(title)
-        ax.grid(alpha=0.25)
-    for ax in axes.ravel()[len(metrics):]:
-        ax.set_visible(False)
-    axes[0, 0].legend()
-    fig.suptitle(f"{dataset_name}: distribution metrics versus mean-only D1")
-    fig.tight_layout()
-    if out_path is not None:
-        Path(out_path).parent.mkdir(parents=True, exist_ok=True)
-        fig.savefig(out_path, dpi=300, bbox_inches="tight")
-    return {"figure": fig, "spearman": correlations}
-
-
 __all__ = [
     "DEFAULT_OUTLIER_THRESHOLD",
     "compute_per_residue_plddt_distribution_metrics",
     "summarize_per_residue_plddt_distribution_metrics",
     "plot_plddt_distribution_profile_by_class",
     "plot_plddt_distribution_summary",
-    "plot_plddt_distribution_vs_d1",
 ]

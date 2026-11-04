@@ -70,7 +70,7 @@ bash run_all.sh S_curves       # one stage
 
 Logs go to `logs/<stage>.log` and `logs/STATUS.log`; the first failing stage stops the run.
 `run_all.sh` refuses to start unless `drift/protein_configs.json` has the published
-fingerprint (`97f1cdbfda8e`): structure draws are keyed by variant, size and seed, so the
+fingerprint (`22e178adaa91`): structure draws are keyed by variant, size and seed, so the
 same config gives the same draws on any machine.
 
 ## Figures and numbers → code
@@ -87,7 +87,7 @@ Stage names are `run_all.sh`'s; `S_<x>` is a stage of `analyses/annotation/stage
 | Fig. 1f and its counts | `analyses/msh6_case_study/wt_backgrounds_200/` (200 splits), `analyses/msh6_case_study/wt_background_2000/` (2,000) | `N1`, `N2` |
 | Figure 1 assembly | `figures/make_figures.py Figure1` | `F1_assemble` |
 | Fig. 2a,b; KS AUCs | `figures/figure2/make_figure2.py` (per-gene curves) | `S_curves`, `S_figure2` |
-| Fig. 2c–f; KS vs assays | `analyses/continuous/continuous_functional/` | `G1`, `G6` |
+| Fig. 2c–f; KS vs assays | `analyses/continuous/continuous_functional/` | `G6` |
 | Fig. 2g | `analyses/annotation/simple_fusion_benchmark/size_sweep.py` | `S_size` |
 | Fig. 2h,i; combination numbers, Table S7 | `analyses/annotation/simple_fusion_benchmark/annotation_tables.py`, `analyses/annotation/am_operating_point/` | `S_tables`, `S_am_operating_point` |
 | Main-text CIs | `analyses/annotation/position_cluster_bootstrap/run.py`, `analyses/annotation/ks_auc_ci/` | `S_ks_auc_ci`, `S_position_cluster` |
@@ -101,7 +101,7 @@ Stage names are `run_all.sh`'s; `S_<x>` is a stage of `analyses/annotation/stage
 | Table S4b, TP53 SNVs | `analyses/continuous/tp53_snv_reachability/` | `N17` |
 | Note S5 | ClinVar checksums `metric_analysis/manifests/verify_clinvar_manifest.py` (`L0`); transcripts `analyses/provenance/clinvar_transcripts/`; KRAS4B batch design `analyses/continuous/kras4b_coverage/` | |
 | Note S6 | AF3 versions `analyses/seeds/tp53_af3_version_check/` (`N18`); templates `analyses/provenance/wt_variant_offset/`; MSA swap `analyses/provenance/wt_msa_check/` (both read the raw archives) | |
-| Cohort counts | `analyses/cohort/build_strict_canonical_manifest.py`, `analyses/continuous/continuous_functional/dataset.py` | `L1`, `G1` |
+| Cohort counts | `analyses/cohort/build_strict_canonical_manifest.py`, `analyses/continuous/continuous_functional/dataset.py` | `L1`, `G6` |
 
 ## Citation
 

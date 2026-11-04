@@ -7,13 +7,13 @@ import unittest
 import numpy as np
 import pandas as pd
 
-SCRIPT = Path(__file__).resolve().parents[2] / 'figures/si/lib/ratio_exemplar.py'
-SPEC = importlib.util.spec_from_file_location('si_ratio_exemplar', SCRIPT)
+SCRIPT = Path(__file__).resolve().parents[2] / 'figures/si/lib/exemplar_sampling.py'
+SPEC = importlib.util.spec_from_file_location('si_exemplar_sampling', SCRIPT)
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
 
-class TestRatioExemplarSampling(unittest.TestCase):
+class TestExemplarSampling(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
@@ -33,8 +33,9 @@ class TestRatioExemplarSampling(unittest.TestCase):
         residues, w, m, n = MODULE.sampled_pair(rec, 7, 11)
         np.testing.assert_array_equal(residues, [1, 2, 3, 4])
         self.assertEqual((w.shape, m.shape, n), ((4, 7), (4, 7), 7))
-        expected = analyse_variant(rec, sizes=(7,), seeds=(11,))[0]['d1']
-        self.assertAlmostEqual(np.nanmean(MODULE.ratio_profile(w, m)[1]), expected, places=14)
+        expected = analyse_variant(rec, sizes=(7,), seeds=(11,))[0]['ks_raw']
+        from metric_analysis.pipeline.library.descriptor_metrics import residue_ks
+        self.assertAlmostEqual(residue_ks(w, m), expected, places=14)
 
     def test_unsplit_sampling_is_unchanged(self):
         rec = dict(self.record, protein='PTEN', plddt_row_range_start=np.nan,

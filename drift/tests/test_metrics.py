@@ -40,23 +40,15 @@ class TestKSMatchesSciPy(unittest.TestCase):
 
     def test_all_callers_define_ks_at_n1_as_discordance_rate(self):
         """At N=1 every KS path returns the fraction of residues whose pLDDTs differ."""
-        from metric_analysis.pipeline.library.ensemble_aware_pipeline import compute_plddt_ks_for_selected_columns
-        from metric_analysis.pipeline.library.plddt_ks import compute_per_residue_plddt_ks
         from drift.ensemble_shift import _residue_ks_summaries
         from analyses.msh6_case_study.ks_meanfree.canonical_analysis import ks_mean_equal
         a = np.array([[70.], [80.], [90.], [60.]])
         b = np.array([[70.], [81.], [95.], [60.]])
         rate = 0.5
         values = descriptor_values(a, b)
-        self.assertAlmostEqual(values["d1"], np.mean(np.abs(b[:, 0] / a[:, 0] - 1)))
         self.assertAlmostEqual(values["ks_raw"], rate)
         self.assertEqual(values["ks_centred"], 0.0)
         self.assertAlmostEqual(ks_mean_equal(a, b), rate)
-        self.assertAlmostEqual(compute_plddt_ks_for_selected_columns(a, b, [0], [0])["plddt_ks_mean"], rate)
-        residue = compute_per_residue_plddt_ks(a, b)
-        np.testing.assert_array_equal(residue.ks_statistic, [0, 1, 1, 0])
-        # Defined, but the test has no power at n = m = 1: every p-value is 1.
-        np.testing.assert_array_equal(residue.ks_pvalue, 1.0)
         raw, centred = _residue_ks_summaries(a, b)
         self.assertAlmostEqual(raw, rate)
         self.assertEqual(centred, 0.0)
@@ -72,15 +64,6 @@ class TestKSMatchesSciPy(unittest.TestCase):
         with self.assertRaises(ValueError):
             residue_ks(a[0], a[0])
 
-    def test_inference_preserves_one_sided_pvalues_and_fdr(self):
-        from metric_analysis.pipeline.library.plddt_ks import compute_per_residue_plddt_ks
-        a, b = np.array([[1, 2, 3.]]), np.array([[3, 4, 5.]])
-        expected = ks_2samp(a[0], b[0], alternative="greater", method="exact")
-        got = compute_per_residue_plddt_ks(a, b, alternative="greater", method="exact").iloc[0]
-        self.assertEqual(got.ks_statistic, expected.statistic)
-        self.assertEqual(got.ks_pvalue, expected.pvalue)
-        self.assertEqual(got.ks_qvalue, expected.pvalue)
-
 
 class TestUnavailableMetricScoring(unittest.TestCase):
     def test_canonical_scoring_and_uncertainty_keep_unavailable_metrics_missing(self):
@@ -91,12 +74,11 @@ class TestUnavailableMetricScoring(unittest.TestCase):
             for i, label in enumerate((0, 0, 1, 1)):
                 rows.append(dict(protein="POLE", mutation_code=f"M{i}", label=label,
                                  requested_size=1, seed_index=seed, seed=seed,
-                                 d1=i / 10, ks_raw=np.nan, ks_centred=np.nan, sd_ratio=np.nan))
+                                 ks_raw=np.nan, ks_centred=np.nan, sd_ratio=i / 10))
         frame = pd.DataFrame(rows)
         scored = analysis.score_gene_seeds(frame)
         self.assertTrue(scored.auc_ks_raw.isna().all())
-        self.assertTrue(scored.auc_combo_d1_ks_raw.isna().all())
-        self.assertTrue(scored.auc_d1.eq(1).all())
+        self.assertTrue(scored.auc_sd_ratio.eq(1).all())
         bootstrap = analysis.bootstrap_summary(frame, reps=3, seed=2)
         self.assertTrue(bootstrap.loc[bootstrap.metric.eq("ks_raw"), "observed_auc"].isna().all())
         permutation = analysis.permutation_summary(frame, reps=3, seed=2)
@@ -106,12 +88,13 @@ class TestUnavailableMetricScoring(unittest.TestCase):
         import pandas as pd
         from analyses.annotation.simple_fusion_benchmark import size_sweep
         frame = pd.DataFrame(dict(gene=["A"] * 4, label=[0, 0, 1, 1],
-                                  afm_score=[.1, .2, .8, .9], d1_score=[.01, .02, .08, .09],
-                                  plddt_ks_residue=np.nan, plddt_ks_centred=np.nan))
+                                  afm_score=[.1, .2, .8, .9],
+                                  plddt_ks_residue=[.01, .02, .08, .09], plddt_ks_centred=np.nan))
         folds = {"LOGO": [(np.array([0, 2]), np.array([1, 3])),
                            (np.array([1, 3]), np.array([0, 2]))]}
         records = size_sweep.cell_scores(frame, folds, ("LOGO",))
-        self.assertEqual({r["arm"] for r in records}, {"AM", "AM+D1", "afm_score", "d1_score"})
+        self.assertEqual({r["arm"] for r in records},
+                         {"AM", "AM+resKS", "afm_score", "plddt_ks_residue"})
         self.assertTrue(all(np.isfinite(r["score"]).all() for r in records))
 
 

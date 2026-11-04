@@ -40,7 +40,7 @@ sys.path.insert(0, str(EXP.parents[2] / "analyses" / "msh6_case_study" / "residu
 from figlib import *  # noqa: F403,E402
 import residue_null as rn  # noqa: E402
 from ks_sequence_panel import DRIVER_C, PASSENGER_C, WT_C, residue_ks  # noqa: E402
-from ratio_exemplar import CANONICAL_SEED, PER_VARIANT, sampled_pair  # noqa: E402
+from exemplar_sampling import CANONICAL_SEED, PER_VARIANT, sampled_pair  # noqa: E402
 from metric_analysis.pipeline.library.canonical_cohort import load_canonical_cohort  # noqa: E402
 
 GENE, DRIVER, PASSENGER = "MSH6", "A1055P", "I1054F"

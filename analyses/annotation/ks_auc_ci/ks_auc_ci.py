@@ -22,7 +22,7 @@ OUT = Path(__file__).resolve().parent / "results" / "ks_auc_ci_v6.csv"
 
 
 def main():
-    frames = [pd.read_csv(CACHE / f"labeled_size90_seed{s}_ratio_of_means_proteins{FP}_esfeat6.csv")
+    frames = [pd.read_csv(CACHE / f"labeled_size90_seed{s}_proteins{FP}_esfeat7.csv")
               .assign(seed=s) for s in SEEDS]
     d = pd.concat(frames)
     d = d[d.gene.isin(GENES)]

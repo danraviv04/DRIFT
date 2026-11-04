@@ -6,7 +6,7 @@ and are disabled in DRIFT's binary pipeline, so their descriptors cannot come fr
 the labelled fusion caches. This module computes them directly, for the four
 assay genes, with the SAME production code the binary pipeline uses:
 
-    D1                drift.structure_draws.build_d1_table + aggregate (via core)
+    variants          drift.structure_draws.build_variant_table + variant_keys
     ensemble shift    drift.ensemble_shift.build_ensemble_shift_features
     AlphaMissense     drift.core.afm_df (KRAS from the P01116-2 / 4B file)
 
@@ -36,14 +36,14 @@ REPO = HERE.parents[2]
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(HERE))
 
-from drift import core  # noqa: E402
+from drift import core, structure_draws  # noqa: E402
 from drift import run as R  # noqa: E402
 from drift.ensemble_shift import (  # noqa: E402
     FEATURE_COLUMNS as ES_FEATURE_COLUMNS,
     build_ensemble_shift_features,
 )
 from drift.protein_config import (  # noqa: E402
-    build_d1_runtime_configs,
+    build_structure_configs,
     load_continuous_configs,
     protein_config_fingerprint,
 )
@@ -57,42 +57,40 @@ CANONICAL_COHORT_GENES = ("PTEN", "MSH2")
 
 
 def runtime_configs():
-    return build_d1_runtime_configs(load_continuous_configs(T.CONTINUOUS_GENES))
+    return build_structure_configs(load_continuous_configs(T.CONTINUOUS_GENES))
 
 
 def _policy(size, seed):
-    cfg = R._resolve_run_config({"d1_max_structures_per_variant": size})
+    cfg = R._resolve_run_config({"max_structures_per_variant": size})
     cfg["seed"] = seed
     return cfg, core.sampling_policy_from_config(cfg)
 
 
 def cache_path(size, seed):
-    cfg, policy = _policy(size, seed)
+    _, policy = _policy(size, seed)
     tag = f"_{policy.tag()}" if policy.tag() else ""
     return CACHE / (
-        f"continuous_size{size}_seed{seed}_{cfg['d1_ratio_mode']}_"
+        f"continuous_size{size}_seed{seed}_"
         f"proteins{protein_config_fingerprint()}_esfeat{R.ES_CACHE_VERSION}{tag}.csv"
     )
 
 
 def build_descriptors(size, seed, force=False):
-    """AM + D1 + ensemble-shift descriptors for every modelled variant, no labels."""
+    """AM + ensemble-shift descriptors for every modelled variant, no labels."""
     path = cache_path(size, seed)
     if path.exists() and not force:
         return pd.read_csv(path)
-    cfg, policy = _policy(size, seed)
+    _, policy = _policy(size, seed)
     configs = runtime_configs()
-    d1_rows, _ = core.build_d1_table(
-        configs, max_structures_per_variant=size, random_seed=seed,
-        ratio_mode=cfg["d1_ratio_mode"], policy=policy,
+    rows, _ = core.build_variant_table(
+        configs, max_structures_per_variant=size, random_seed=seed, policy=policy,
     )
-    d1 = core.aggregate_d1_rows_to_mutation_level(d1_rows, ratio_mode=cfg["d1_ratio_mode"])
-    d1 = d1[["gene", "mutation", "d1_score"]]
+    variants = structure_draws.variant_keys(rows)
     feat = build_ensemble_shift_features(
         configs, max_structures_per_variant=size, seed=seed, policy=policy,
     )
     afm = core.afm_df[["gene", "mutation", "afm_score"]].drop_duplicates(["gene", "mutation"])
-    df = (d1.merge(feat, on=["gene", "mutation"], how="outer", validate="one_to_one")
+    df = (variants.merge(feat, on=["gene", "mutation"], how="outer", validate="one_to_one")
             .merge(afm, on=["gene", "mutation"], how="left", validate="one_to_one"))
     df = df[df["gene"].isin(T.CONTINUOUS_GENES)].sort_values(["gene", "mutation"])
     df = df.reset_index(drop=True)
@@ -126,7 +124,7 @@ def cohort(descriptors):
 
 def load(size, seed, force=False):
     """The continuous cohort at one (size, seed): descriptors + assay target."""
-    return R._add_derived_features(cohort(build_descriptors(size, seed, force=force)))
+    return cohort(build_descriptors(size, seed, force=force))
 
 
 if __name__ == "__main__":
@@ -138,5 +136,5 @@ if __name__ == "__main__":
     a = ap.parse_args()
     out = load(a.size, a.seed, force=a.force)
     print(out.groupby("gene").agg(n=("y", "size"), ks=("plddt_ks_residue", "mean"),
-                                  d1=("d1_score", "mean"), afm=("afm_score", "mean")))
+                                  afm=("afm_score", "mean")))
     print("ES columns missing:", sorted(set(ES_FEATURE_COLUMNS) - set(out.columns)))

@@ -56,7 +56,8 @@ def load_s1():
     spec.loader.exec_module(s1)
     s1.COHORT = RUN / "side/annotation_cohort_25seed.csv"   # POLE seeds 1-25, P356S out (annotation_stages run)
     s1.CACHE = ROOT / "drift/cache"
-    s1.FP = "97f1cdbfda8e"
+    from drift.protein_config import protein_config_fingerprint
+    s1.FP = protein_config_fingerprint()
     return s1
 
 

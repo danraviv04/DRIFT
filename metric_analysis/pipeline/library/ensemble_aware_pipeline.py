@@ -1,5 +1,5 @@
-"""Harmonized "ensemble-aware" layer: coordinate/DNA caches + D1/RMSF/RMSD/DNA
-N-size sweeps + unified metric comparisons.
+"""Harmonized "ensemble-aware" layer: RMSF/RMSD/DNA N-size sweeps from the coordinate
+caches, the pLDDT distribution sweep, and unified metric comparisons.
 
 Before this module, this logic was copy-pasted inline across all 5 protein
 notebooks (~20-25 cells each). It is ported here config-driven off
@@ -15,12 +15,11 @@ without opening a notebook. Two things are deliberately NOT re-implemented here:
 - Driver/Passenger label assignment is labels.classify_allele_or_artifact, the
   single dispatcher shared with run_ensemble_sweep_parallel.py.
 
-What IS new here (not previously scripted anywhere): the D1 and pLDDT-KS ensemble
-sweeps, the DNA per-structure cache + DNA ensemble sweep, the RMSD "N=all
-available structures" analysis, and the two unified all-metrics comparison steps.
+What IS new here (not previously scripted anywhere): the pLDDT distribution
+ensemble sweep, the DNA ensemble sweep, the RMSD "N=all available structures"
+analysis, and the two unified all-metrics comparison steps.
 """
 
-import time
 import warnings
 from pathlib import Path
 
@@ -41,12 +40,9 @@ from metric_analysis.pipeline.orchestration.run_ensemble_sweep_parallel import (
     compare_driver_passenger,
     save_csv,
     get_repeats_for_n,
-    compute_rmsf_summary_from_coords,
     _mean_coords_by_residue,
     _rmsd_between_mean_coords,
 )
-
-from metric_analysis.pipeline.library.descriptor_metrics import residue_ks_statistics
 
 ENSEMBLE_RANDOM_SEED = 42
 
@@ -128,7 +124,7 @@ def _sweep_outputs_exist(cfg, family, name):
     )
 
 
-# ── D1 ensemble-size sweep from residue x seed pLDDT matrices ─────────────────
+# ── pLDDT ensemble-size sweeps from residue x seed pLDDT matrices ─────────────
 # Cheap: does not parse structures, only reads the per-mutation pLDDT CSVs
 # already produced by process_artifacts_to_plddt.
 
@@ -162,91 +158,6 @@ def load_plddt_matrix(path):
     """Residue x sample pLDDT table, sliced to the active scope's rows (a subunit's chain)."""
     df = sm._apply_row_block(pd.read_csv(path, index_col=0), path)
     return df, df.to_numpy(dtype=float)
-
-
-def compute_d1_for_selected_columns(wt_matrix, mut_matrix, wt_cols, mut_cols, eps=1e-8,
-                                    allow_length_truncation=False):
-    wt_selected = wt_matrix[:, wt_cols].astype(float)
-    mut_selected = mut_matrix[:, mut_cols].astype(float)
-    if wt_selected.shape[0] != mut_selected.shape[0]:
-        # WT/mutant residue-count mismatch: for a missense variant these must match,
-        # so a mismatch signals a malformed artifact. Reject (NaN) by default rather
-        # than silently truncating to the shorter length -- mirrors structure_metrics'
-        # D1_ALLOW_LENGTH_TRUNCATION policy. Pass allow_length_truncation=True to opt in.
-        if not allow_length_truncation:
-            warnings.warn(
-                f"pLDDT residue-count mismatch (WT={wt_selected.shape[0]}, "
-                f"mutant={mut_selected.shape[0]}); D1 set to NaN. Pass "
-                f"allow_length_truncation=True to restore legacy min-length truncation.",
-                RuntimeWarning,
-            )
-            return {
-                "d1_mean": float("nan"), "d1_median": float("nan"),
-                "d1_std": float("nan"), "d1_min": float("nan"), "d1_max": float("nan"),
-                "n_residues_used": 0, "d1_length_mismatch": True,
-            }
-        n = min(wt_selected.shape[0], mut_selected.shape[0])
-        wt_selected = wt_selected[:n, :]
-        mut_selected = mut_selected[:n, :]
-    wt_mean = np.nanmean(wt_selected, axis=1)
-    mut_mean = np.nanmean(mut_selected, axis=1)
-    d1_per_residue = np.abs(mut_mean / np.maximum(wt_mean, eps) - 1.0)
-    return {
-        "d1_mean": float(np.nanmean(d1_per_residue)),
-        "d1_median": float(np.nanmedian(d1_per_residue)),
-        "d1_std": float(np.nanstd(d1_per_residue)),
-        "d1_min": float(np.nanmin(d1_per_residue)),
-        "d1_max": float(np.nanmax(d1_per_residue)),
-        "n_residues_used": int(np.isfinite(d1_per_residue).sum()),
-    }
-
-
-def compute_plddt_ks_for_selected_columns(
-    wt_matrix, mut_matrix, wt_cols, mut_cols, *, min_samples=1
-):
-    """Summarize per-residue WT-vs-mutant KS magnitudes for one subsample.
-
-    The finite, equal-width case is vectorized because an ensemble sweep performs
-    this calculation millions of residue-times. Ties are handled by evaluating
-    the empirical-CDF difference only after the complete equal-value group, which
-    matches ``scipy.stats.ks_2samp``. Inputs containing non-finite values fall back
-    to the canonical per-residue implementation.
-    """
-    wt_selected = np.asarray(wt_matrix, dtype=float)[:, wt_cols]
-    mut_selected = np.asarray(mut_matrix, dtype=float)[:, mut_cols]
-    if wt_selected.shape[0] != mut_selected.shape[0]:
-        return {
-            "plddt_ks_mean": float("nan"),
-            "plddt_ks_median": float("nan"),
-            "plddt_ks_max": float("nan"),
-            "n_residues_used": 0,
-            "ks_length_mismatch": True,
-        }
-    if min(wt_selected.shape[1], mut_selected.shape[1]) < int(min_samples):
-        return {
-            "plddt_ks_mean": float("nan"),
-            "plddt_ks_median": float("nan"),
-            "plddt_ks_max": float("nan"),
-            "n_residues_used": 0,
-            "ks_insufficient_samples": True,
-        }
-
-    statistic = residue_ks_statistics(wt_selected, mut_selected, min_samples=min_samples)
-
-    finite = statistic[np.isfinite(statistic)]
-    if finite.size == 0:
-        return {
-            "plddt_ks_mean": float("nan"),
-            "plddt_ks_median": float("nan"),
-            "plddt_ks_max": float("nan"),
-            "n_residues_used": 0,
-        }
-    return {
-        "plddt_ks_mean": float(np.mean(finite)),
-        "plddt_ks_median": float(np.median(finite)),
-        "plddt_ks_max": float(np.max(finite)),
-        "n_residues_used": int(finite.size),
-    }
 
 
 def compute_plddt_distribution_for_selected_columns(
@@ -294,337 +205,7 @@ def _sample_indices(n_available, n, rng):
     return rng.choice(n_available, size=n, replace=False)
 
 
-def run_d1_ensemble_sweep(cfg, plddt_dir=None, force=False):
-    prefix = _prefix(cfg)
-    sweep_dir = _sweep_dir(cfg)
-    if not force and _sweep_outputs_exist(cfg, "D1", "D1_true_plddt"):
-        print(f"[{prefix}] D1 sweep outputs already exist — skipping. Use force=True to recompute.")
-        return {
-            "raw": pd.read_csv(sweep_dir / f"{prefix}_D1_true_plddt_ensemble_sweep_raw.csv"),
-            "performance": pd.read_csv(sweep_dir / f"{prefix}_D1_true_plddt_ensemble_sweep_performance.csv"),
-            "summary": pd.read_csv(sweep_dir / f"{prefix}_D1_true_plddt_ensemble_sweep_summary.csv"),
-        }
-
-    plddt_dir = Path(plddt_dir or _plddt_dir(cfg))
-    with _plddt_scope(cfg):
-        return _run_d1_ensemble_sweep(cfg, plddt_dir)
-
-
-def _run_d1_ensemble_sweep(cfg, plddt_dir):
-    prefix = _prefix(cfg)
-    sweep_dir = _sweep_dir(cfg)
-    wt_path, mut_paths = find_plddt_csvs(plddt_dir, cfg.get("wt_artifact"))
-    _, wt_matrix = load_plddt_matrix(wt_path)
-    print(f"[{prefix}] D1 sweep — WT: {wt_path.name}, {len(mut_paths)} mutant pLDDT files, "
-          f"{wt_matrix.shape[0]} residues")
-
-    rng = np.random.default_rng(ENSEMBLE_RANDOM_SEED)
-    raw_rows = []
-    for n in cfg["ensemble_sizes"]:
-        reps = get_repeats_for_n(n, cfg["ensemble_repeats_by_size"])
-        for mut_path in tqdm(mut_paths, desc=f"[{prefix}] D1 N={n}"):
-            artifact = mut_path.stem.replace("_plddt_values", "")
-            allele = artifact_to_allele(artifact)
-            label_class = classify_allele_or_artifact(artifact, cfg)
-            _, mut_matrix = load_plddt_matrix(mut_path)
-            if n > wt_matrix.shape[1] or n > mut_matrix.shape[1]:
-                continue
-            for r in range(reps):
-                wt_cols = _sample_indices(wt_matrix.shape[1], n, rng)
-                mut_cols = _sample_indices(mut_matrix.shape[1], n, rng)
-                if wt_cols is None or mut_cols is None:
-                    continue
-                vals = compute_d1_for_selected_columns(wt_matrix, mut_matrix, wt_cols, mut_cols)
-                raw_rows.append({
-                    "metric_family": "D1", "artifact": artifact, "Allele": allele,
-                    "label_class": label_class, "ensemble_size": int(n), "repeat": int(r),
-                    "n_wt_available": int(wt_matrix.shape[1]), "n_mut_available": int(mut_matrix.shape[1]),
-                    **vals,
-                })
-
-    raw = pd.DataFrame(raw_rows)
-    save_csv(raw, sweep_dir / f"{prefix}_D1_true_plddt_ensemble_sweep_raw.csv")
-
-    perf_rows = [
-        {"metric_family": "D1", "ensemble_size": n, "repeat": r, **compare_driver_passenger(g, "d1_mean")}
-        for (n, r), g in raw.groupby(["ensemble_size", "repeat"])
-    ]
-    perf = pd.DataFrame(perf_rows)
-    # Descriptive separation magnitude (direction-agnostic, clearly NOT a predictive
-    # score): distance of the signed driver-high AUC from chance.
-    perf["auc_separation"] = (perf["roc_auc_driver_high"] - 0.5).abs()
-    save_csv(perf, sweep_dir / f"{prefix}_D1_true_plddt_ensemble_sweep_performance.csv")
-
-    # PRIMARY reported AUC is the SIGNED driver-high AUC (<0.5 => higher in passengers),
-    # so an inverse association is visible rather than flipped to look predictive. Cliff's
-    # delta carries the same direction. best_direction / separation are kept only as
-    # clearly-labeled descriptive columns.
-    summary = perf.groupby(["metric_family", "ensemble_size"], as_index=False).agg(
-        n_repeats=("repeat", "nunique"),
-        auc_mean=("roc_auc_driver_high", "mean"),
-        auc_std=("roc_auc_driver_high", "std"),
-        auc_min=("roc_auc_driver_high", "min"),
-        auc_max=("roc_auc_driver_high", "max"),
-        auc_best_direction_mean=("roc_auc_best_direction", "mean"),
-        auc_separation_mean=("auc_separation", "mean"),
-        cliffs_mean=("cliffs_delta_driver_minus_passenger", "mean"),
-        wasserstein_mean=("wasserstein", "mean"),
-        n_driver=("n_driver", "median"),
-        n_passenger=("n_passenger", "median"),
-    )
-    save_csv(summary, sweep_dir / f"{prefix}_D1_true_plddt_ensemble_sweep_summary.csv")
-
-    _plot_d1_auc_vs_n(cfg, summary)
-    _write_d1_sem_diagnostics(cfg, raw, perf)
-    return {"raw": raw, "performance": perf, "summary": summary}
-
-
-def _plot_d1_auc_vs_n(cfg, summary):
-    import matplotlib.pyplot as plt
-    prefix = _prefix(cfg)
-    plt.figure(figsize=(8, 5))
-    plt.errorbar(summary["ensemble_size"], summary["auc_mean"], yerr=summary["auc_std"], marker="o", capsize=3)
-    # No chance line: pinning the axis to 0.5 spent most of the panel on empty
-    # range and flattened the very increments the sweep exists to show. The axis
-    # is padded around the data + error bars instead, and the label still states
-    # where chance lies for a reader who needs it.
-    lo = float((summary["auc_mean"] - summary["auc_std"]).min())
-    hi = float((summary["auc_mean"] + summary["auc_std"]).max())
-    pad = max((hi - lo) * 0.15, 0.005)
-    plt.ylim(lo - pad, hi + pad)
-    plt.xlabel("Ensemble size N")
-    plt.ylabel("ROC-AUC (driver-high, signed; 0.5 = chance)")
-    plt.title(f"{prefix} D1 ensemble-size sensitivity")
-    plt.grid(alpha=0.3)
-    plot_path = _plot_dir(cfg) / f"{prefix}_D1_true_plddt_N_sweep_AUC.png"
-    plt.tight_layout()
-    plt.savefig(plot_path, dpi=300)
-    plt.close()
-    print(f"Saved plot: {plot_path}")
-
-
-def _write_d1_sem_diagnostics(cfg, raw, perf):
-    prefix = _prefix(cfg)
-    sweep_dir = _sweep_dir(cfg)
-
-    value_summary = perf.groupby(["metric_family", "ensemble_size"], as_index=False).agg(
-        n_repeats=("repeat", "nunique"),
-        driver_value_mean=("driver_mean", "mean"), driver_value_std=("driver_mean", "std"),
-        passenger_value_mean=("passenger_mean", "mean"), passenger_value_std=("passenger_mean", "std"),
-        n_driver=("n_driver", "median"), n_passenger=("n_passenger", "median"),
-    )
-    value_summary["driver_value_sem"] = value_summary["driver_value_std"] / np.sqrt(value_summary["n_repeats"])
-    value_summary["passenger_value_sem"] = value_summary["passenger_value_std"] / np.sqrt(value_summary["n_repeats"])
-    value_summary["metric_col"] = "d1_mean"
-    value_summary["driver_minus_passenger_mean"] = value_summary["driver_value_mean"] - value_summary["passenger_value_mean"]
-    save_csv(value_summary, sweep_dir / f"{prefix}_D1_true_plddt_ensemble_sweep_value_summary.csv")
-
-    d1_repeat_means = (
-        raw[raw["label_class"].isin(["Driver", "Passenger"])]
-        .groupby(["ensemble_size", "repeat"], as_index=False)
-        .agg(repeated_mean=("d1_mean", "mean"), n_artifacts=("artifact", "nunique"))
-    )
-    d1_estimator_sem = d1_repeat_means.groupby(["ensemble_size"], as_index=False).agg(
-        n_repeats=("repeat", "nunique"), repeated_mean=("repeated_mean", "mean"),
-        repeat_mean_sd=("repeated_mean", "std"), repeated_n_artifacts=("n_artifacts", "median"),
-    )
-    d1_estimator_sem["sem_of_estimator"] = d1_estimator_sem["repeat_mean_sd"] / np.sqrt(d1_estimator_sem["n_repeats"])
-    d1_estimator_sem.loc[d1_estimator_sem["n_repeats"] < 2, "sem_of_estimator"] = np.nan
-    d1_estimator_sem.insert(0, "sem_group", "Driver+Passenger")
-    save_csv(d1_estimator_sem, sweep_dir / f"{prefix}_D1_true_plddt_ensemble_sweep_estimator_sem.csv")
-
-    d1_variant_sem = raw.groupby(["artifact", "Allele", "label_class", "ensemble_size"], as_index=False).agg(
-        n_repeats=("repeat", "nunique"), d1_mean_value=("d1_mean", "mean"), d1_mean_std=("d1_mean", "std"),
-    )
-    d1_variant_sem["d1_mean_sem"] = d1_variant_sem["d1_mean_std"] / np.sqrt(d1_variant_sem["n_repeats"])
-    d1_variant_sem.loc[d1_variant_sem["n_repeats"] < 2, "d1_mean_sem"] = np.nan
-    save_csv(d1_variant_sem, sweep_dir / f"{prefix}_D1_true_plddt_ensemble_sweep_variant_level_sem.csv")
-
-    d1_labeled_sem = d1_variant_sem[
-        d1_variant_sem["label_class"].isin(["Driver", "Passenger"]) & d1_variant_sem["d1_mean_sem"].notna()
-    ].copy()
-    d1_variant_sem_summary = d1_labeled_sem.groupby(["ensemble_size"], as_index=False).agg(
-        n_artifacts=("artifact", "nunique"),
-        median_variant_sem=("d1_mean_sem", "median"), mean_variant_sem=("d1_mean_sem", "mean"),
-        q25_variant_sem=("d1_mean_sem", lambda x: float(np.nanquantile(x, 0.25))),
-        q75_variant_sem=("d1_mean_sem", lambda x: float(np.nanquantile(x, 0.75))),
-        median_n_repeats=("n_repeats", "median"),
-    )
-    d1_variant_sem_summary.insert(0, "sem_group", "Driver+Passenger")
-    d1_variant_sem_summary = d1_variant_sem_summary.merge(
-        d1_estimator_sem[["ensemble_size", "repeated_mean", "repeat_mean_sd", "sem_of_estimator"]],
-        on="ensemble_size", how="left",
-    )
-    save_csv(d1_variant_sem_summary, sweep_dir / f"{prefix}_D1_true_plddt_ensemble_sweep_variant_sem_summary.csv")
-
-    import matplotlib.pyplot as plt
-    plt.figure(figsize=(8, 5))
-    x = d1_variant_sem_summary["ensemble_size"].to_numpy(float)
-    plt.plot(x, d1_variant_sem_summary["median_variant_sem"].to_numpy(float), marker="o", label="Driver+Passenger median variant SEM")
-    plt.fill_between(x, d1_variant_sem_summary["q25_variant_sem"].to_numpy(float), d1_variant_sem_summary["q75_variant_sem"].to_numpy(float), alpha=0.2, linewidth=0, label="IQR across variants")
-    plt.plot(x, d1_variant_sem_summary["sem_of_estimator"].to_numpy(float), marker="x", linestyle="--", label="SEM of repeated-mean estimator")
-    plt.xlabel("Ensemble size N")
-    plt.ylabel("SEM of d1_mean")
-    plt.title(f"{prefix} D1 ensemble-size sensitivity: SEM diagnostics")
-    plt.yscale("log")
-    plt.grid(alpha=0.3, which="both")
-    plt.legend(fontsize=9)
-    plot_path = _plot_dir(cfg) / f"{prefix}_D1_true_plddt_N_sweep_SEM_diagnostics.png"
-    plt.tight_layout()
-    plt.savefig(plot_path, dpi=300)
-    plt.close()
-    print(f"Saved SEM diagnostics plot: {plot_path}")
-
-
 # ── pLDDT KS ensemble-size sweep ─────────────────────────────────────────────
-
-def run_plddt_ks_ensemble_sweep(
-    cfg, *, plddt_files=None, wt_path=None, force=False, min_samples=1
-):
-    """Measure Driver/Passenger ROC-AUC of mean per-residue KS versus N (see below)."""
-    with _plddt_scope(cfg):
-        return _run_plddt_ks_ensemble_sweep(
-            cfg, plddt_files=plddt_files, wt_path=wt_path, force=force, min_samples=min_samples
-        )
-
-
-def _run_plddt_ks_ensemble_sweep(
-    cfg, *, plddt_files=None, wt_path=None, force=False, min_samples=1
-):
-    """Measure Driver/Passenger ROC-AUC of mean per-residue KS versus N.
-
-    Sampling and AUC aggregation intentionally match ``run_d1_ensemble_sweep``:
-    WT and mutant columns are sampled without replacement using the same fixed
-    seed, and the primary performance value is signed driver-high ROC-AUC. The
-    KS score requires at least two observations per distribution, so configured
-    N=1 rows are retained as unavailable rather than assigned a degenerate score.
-    """
-    prefix = _prefix(cfg)
-    sweep_dir = _sweep_dir(cfg)
-    name = "pLDDT_KS"
-    paths = {
-        kind: sweep_dir / f"{prefix}_{name}_ensemble_sweep_{kind}.csv"
-        for kind in ("raw", "performance", "summary")
-    }
-    if not force and all(path.exists() for path in paths.values()):
-        result = {kind: pd.read_csv(path) for kind, path in paths.items()}
-        _plot_plddt_ks_auc_vs_n(cfg, result["summary"])
-        print(
-            f"[{prefix}] pLDDT KS sweep outputs already exist — using cache. "
-            "Use force=True to recompute."
-        )
-        return result
-
-    if plddt_files is None:
-        with _plddt_scope(cfg):
-            plddt_files = sm.list_plddt_csv_files(_plddt_dir(cfg))
-    else:
-        plddt_files = sorted(Path(path) for path in plddt_files)
-    if wt_path is None:
-        with _plddt_scope(cfg):
-            discovered_wt, _ = find_plddt_csvs(_plddt_dir(cfg), cfg.get("wt_artifact"))
-        wt_path = discovered_wt
-    wt_path = Path(wt_path)
-    mut_paths = [
-        path for path in plddt_files
-        if path.resolve() != wt_path.resolve() and not is_wt_artifact(path.stem)
-    ]
-    if not mut_paths:
-        raise ValueError(f"[{prefix}] no mutant pLDDT CSVs available for KS sweep")
-
-    _, wt_matrix = load_plddt_matrix(wt_path)
-    print(
-        f"[{prefix}] pLDDT KS sweep — WT: {wt_path.name}, "
-        f"{len(mut_paths)} mutant pLDDT files"
-    )
-    rng = np.random.default_rng(ENSEMBLE_RANDOM_SEED)
-    raw_rows = []
-    for n in cfg["ensemble_sizes"]:
-        reps = get_repeats_for_n(n, cfg["ensemble_repeats_by_size"])
-        for mut_path in tqdm(mut_paths, desc=f"[{prefix}] pLDDT KS N={n}"):
-            artifact = mut_path.stem.replace("_plddt_values", "")
-            allele = artifact_to_allele(artifact)
-            label_class = classify_allele_or_artifact(artifact, cfg)
-            _, mut_matrix = load_plddt_matrix(mut_path)
-            if n > wt_matrix.shape[1] or n > mut_matrix.shape[1]:
-                continue
-            for r in range(reps):
-                wt_cols = _sample_indices(wt_matrix.shape[1], n, rng)
-                mut_cols = _sample_indices(mut_matrix.shape[1], n, rng)
-                vals = compute_plddt_ks_for_selected_columns(
-                    wt_matrix, mut_matrix, wt_cols, mut_cols,
-                    min_samples=min_samples,
-                )
-                raw_rows.append({
-                    "metric_family": "pLDDT_KS", "artifact": artifact,
-                    "Allele": allele, "label_class": label_class,
-                    "ensemble_size": int(n), "repeat": int(r),
-                    "n_wt_available": int(wt_matrix.shape[1]),
-                    "n_mut_available": int(mut_matrix.shape[1]),
-                    **vals,
-                })
-
-    raw = pd.DataFrame(raw_rows)
-    save_csv(raw, paths["raw"])
-    perf_rows = [
-        {
-            "metric_family": "pLDDT_KS", "ensemble_size": n, "repeat": r,
-            **compare_driver_passenger(group, "plddt_ks_mean"),
-        }
-        for (n, r), group in raw.groupby(["ensemble_size", "repeat"])
-    ]
-    perf = pd.DataFrame(perf_rows)
-    perf["auc_separation"] = (perf["roc_auc_driver_high"] - 0.5).abs()
-    save_csv(perf, paths["performance"])
-    summary = perf.groupby(["metric_family", "ensemble_size"], as_index=False).agg(
-        n_repeats=("repeat", "nunique"),
-        auc_mean=("roc_auc_driver_high", "mean"),
-        auc_std=("roc_auc_driver_high", "std"),
-        auc_min=("roc_auc_driver_high", "min"),
-        auc_max=("roc_auc_driver_high", "max"),
-        auc_best_direction_mean=("roc_auc_best_direction", "mean"),
-        auc_separation_mean=("auc_separation", "mean"),
-        cliffs_mean=("cliffs_delta_driver_minus_passenger", "mean"),
-        wasserstein_mean=("wasserstein", "mean"),
-        n_driver=("n_driver", "median"),
-        n_passenger=("n_passenger", "median"),
-    )
-    save_csv(summary, paths["summary"])
-    _plot_plddt_ks_auc_vs_n(cfg, summary)
-    return {"raw": raw, "performance": perf, "summary": summary}
-
-
-def _plot_plddt_ks_auc_vs_n(cfg, summary):
-    import matplotlib.pyplot as plt
-
-    prefix = _prefix(cfg)
-    plot_df = summary.dropna(subset=["auc_mean"]).copy()
-    if plot_df.empty:
-        warnings.warn(
-            f"[{prefix}] no finite pLDDT KS ROC-AUC values to plot",
-            RuntimeWarning,
-        )
-        return None
-    error = pd.to_numeric(plot_df["auc_std"], errors="coerce").fillna(0.0)
-    plt.figure(figsize=(8, 5))
-    plt.errorbar(
-        plot_df["ensemble_size"], plot_df["auc_mean"], yerr=error,
-        marker="o", capsize=3,
-    )
-    lo = float((plot_df["auc_mean"] - error).min())
-    hi = float((plot_df["auc_mean"] + error).max())
-    pad = max((hi - lo) * 0.15, 0.005)
-    plt.ylim(max(0.0, lo - pad), min(1.0, hi + pad))
-    plt.xlabel("Ensemble size N")
-    plt.ylabel("ROC-AUC (driver-high, signed; 0.5 = chance)")
-    plt.title(f"{prefix} pLDDT KS ensemble-size sensitivity")
-    plt.grid(alpha=0.3)
-    plot_path = _plot_dir(cfg) / f"{prefix}_pLDDT_KS_N_sweep_AUC.png"
-    plt.tight_layout()
-    plt.savefig(plot_path, dpi=300)
-    plt.close()
-    print(f"Saved plot: {plot_path}")
-    return plot_path
 
 
 # ── Full-distribution pLDDT ensemble-size sweep ──────────────────────────────
@@ -1029,78 +610,6 @@ def _drop_top_ranked_duplicate_rows(cfg, df, quiet=False):
 # ── DNA per-structure cache + DNA-distance N-size sweep ───────────────────────
 # Skipped entirely for proteins with no "dna_chains" (KRAS).
 
-def _is_dna_residue(residue):
-    name = residue.get_resname().strip().upper()
-    return name in {"DA", "DT", "DG", "DC", "A", "T", "G", "C", "DU", "U"}
-
-
-def _iter_atoms_in_chains(structure, chain_ids, atom_filter=None):
-    chain_ids = {str(c) for c in chain_ids}
-    for model in structure:
-        for chain in model:
-            if str(chain.id) not in chain_ids:
-                continue
-            for residue in chain:
-                for atom in residue:
-                    if atom_filter is None or atom_filter(atom, residue, chain):
-                        yield chain, residue, atom
-        break  # first model only
-
-
-def compute_dna_metrics_for_structure(path, protein_chains, dna_chains, threshold=5.0):
-    st = sm._load_structure_any_format(path)
-    dna_coords = [
-        atom.get_coord().astype(float)
-        for _, residue, atom in _iter_atoms_in_chains(st, dna_chains)
-        if _is_dna_residue(residue)
-    ]
-    if not dna_coords:
-        raise ValueError("no DNA atoms found")
-    dna_coords = np.vstack(dna_coords)
-
-    residue_rows = []
-    for chain, residue, atom in _iter_atoms_in_chains(
-        st, protein_chains, atom_filter=lambda atom, residue, chain: atom.get_name().strip() == "CA"
-    ):
-        hetflag, resid, icode = residue.id
-        if hetflag.strip():
-            continue
-        c = atom.get_coord().astype(float)
-        d = np.sqrt(np.sum((dna_coords - c[None, :]) ** 2, axis=1))
-        min_d = float(np.nanmin(d))
-        residue_rows.append({
-            "chain": str(chain.id), "resid": int(resid), "icode": str(icode).strip(),
-            "resname": residue.get_resname(), "min_distance_to_dna": min_d,
-            "near_dna": bool(min_d <= threshold),
-        })
-    residue_df = pd.DataFrame(residue_rows)
-    if residue_df.empty:
-        raise ValueError("no protein CA residues found")
-
-    distances = residue_df["min_distance_to_dna"].astype(float).to_numpy()
-    summary = {
-        "whole_protein_mean_min_distance": float(np.nanmean(distances)),
-        "whole_protein_median_min_distance": float(np.nanmedian(distances)),
-        "whole_protein_min_min_distance": float(np.nanmin(distances)),
-        "whole_protein_fraction_near_dna": float(np.nanmean(distances <= threshold)),
-        "n_residues": int(len(distances)),
-        "n_near_dna_residues": int(np.sum(distances <= threshold)),
-    }
-    interface_dist = distances[distances <= threshold]
-    if len(interface_dist):
-        summary.update({
-            "interface_mean_min_distance": float(np.nanmean(interface_dist)),
-            "interface_median_min_distance": float(np.nanmedian(interface_dist)),
-            "interface_min_min_distance": float(np.nanmin(interface_dist)),
-            "n_interface_residues": int(len(interface_dist)),
-        })
-    else:
-        summary.update({
-            "interface_mean_min_distance": np.nan, "interface_median_min_distance": np.nan,
-            "interface_min_min_distance": np.nan, "n_interface_residues": 0,
-        })
-    return summary, residue_df
-
 
 def load_dna_structure_cache(cfg):
     path = _cache_dir(cfg) / f"{_prefix(cfg)}_dna_per_structure_summary_cache.csv.gz"
@@ -1111,56 +620,6 @@ def load_dna_structure_cache(cfg):
     if exclude and "artifact" in df.columns:
         df = df.loc[~df["artifact"].astype(str).isin(exclude)].copy()
     return _drop_top_ranked_duplicate_rows(cfg, df)
-
-
-def load_dna_residue_cache(cfg):
-    path = _cache_dir(cfg) / f"{_prefix(cfg)}_dna_per_structure_residue_cache.csv.gz"
-    if not path.exists():
-        return None
-    # quiet: the summary cache above already reported the same drop for this protein.
-    return _drop_top_ranked_duplicate_rows(cfg, pd.read_csv(path), quiet=True)
-
-
-def build_dna_structure_cache_for_index(cfg, structure_index_subset, max_attempts=3, retry_sleep_sec=2.0, desc=None):
-    protein_chains, dna_chains = cfg["protein_chains"], cfg["dna_chains"]
-    threshold = float(cfg.get("dna_distance_threshold", 5.0))
-    summary_rows, residue_rows, error_rows = [], [], []
-    for row in tqdm(structure_index_subset.itertuples(index=False), total=len(structure_index_subset), desc=desc or f"[{_prefix(cfg)}] Building DNA per-structure cache"):
-        last_error = None
-        for attempt in range(1, max_attempts + 1):
-            try:
-                summary, residue_df = compute_dna_metrics_for_structure(row.structure_path, protein_chains, dna_chains, threshold)
-                base = {
-                    "artifact": row.artifact, "Allele": getattr(row, "Allele", None),
-                    "label_class": getattr(row, "label_class", None),
-                    "structure_index": int(row.structure_index),
-                    "structure_file": getattr(row, "structure_file", None),
-                    "structure_path": row.structure_path,
-                }
-                summary_rows.append({**base, **summary})
-                residue_rows.extend({**base, **rr} for rr in residue_df.to_dict("records"))
-                break
-            except Exception as e:
-                last_error = e
-                if attempt < max_attempts:
-                    time.sleep(retry_sleep_sec)
-        else:
-            error_rows.append({
-                "artifact": row.artifact, "Allele": getattr(row, "Allele", None),
-                "label_class": getattr(row, "label_class", None),
-                "structure_index": int(row.structure_index),
-                "structure_path": row.structure_path, "error": repr(last_error), "n_attempts": max_attempts,
-            })
-    return pd.DataFrame(summary_rows), pd.DataFrame(residue_rows), pd.DataFrame(error_rows)
-
-
-def save_dna_caches(cfg, summary_df=None, residue_df=None):
-    cache_dir = _cache_dir(cfg)
-    prefix = _prefix(cfg)
-    if summary_df is not None and not summary_df.empty:
-        save_csv(summary_df, cache_dir / f"{prefix}_dna_per_structure_summary_cache.csv.gz")
-    if residue_df is not None and not residue_df.empty:
-        save_csv(residue_df, cache_dir / f"{prefix}_dna_per_structure_residue_cache.csv.gz")
 
 
 def _aggregate_scalar_cache_for_selected_rows(g, metric_cols):
@@ -1236,7 +695,7 @@ def run_dna_ensemble_sweep(cfg, cache_df=None, force=False):
 
     if not perf.empty:
         perf["auc_separation"] = (perf["roc_auc_driver_high"] - 0.5).abs()
-    # PRIMARY AUC = signed driver-high (see D1 sweep note); best_direction/separation
+    # PRIMARY AUC = signed driver-high; best_direction/separation
     # are descriptive-only companions.
     summary = perf.groupby(["metric_family", "metric_col", "ensemble_size"], as_index=False).agg(
         n_repeats=("repeat", "nunique"), auc_mean=("roc_auc_driver_high", "mean"),
@@ -1504,7 +963,7 @@ def _plot_rmsd_all_instances(cfg, artifact_df, ranking_df):
 # ── Unified all-metrics comparisons ───────────────────────────────────────────
 
 def run_unified_comparison_at_max_n(cfg):
-    """D1/RMSF/DNA at the largest swept N; RMSD replaced by the true N=all point."""
+    """RMSF/DNA at the largest swept N; RMSD replaced by the true N=all point."""
     prefix = _prefix(cfg)
     aware_dir = _aware_dir(cfg)
     sweep_dir = _sweep_dir(cfg)
@@ -1517,7 +976,6 @@ def run_unified_comparison_at_max_n(cfg):
         return pd.DataFrame()
 
     sweep = pd.read_csv(combined_summary_path)
-    sweep["metric_col"] = sweep["metric_col"].fillna("d1_score")
     sweep_at_n = sweep[sweep["ensemble_size"] == max_n].copy()
     sweep_at_n = sweep_at_n.rename(columns={"auc_mean": "roc_auc", "cliffs_mean": "cliffs_delta", "wasserstein_mean": "wasserstein"})
     sweep_at_n["source"] = f"sweep_N{max_n}"
@@ -1551,13 +1009,13 @@ def _plot_unified_comparison(cfg, combined, max_n, out_path):
     import matplotlib.patches as mpatches
     prefix = _prefix(cfg)
 
-    family_colors = {"D1": "#4C72B0", "RMSF": "#DD8452", "DNA_distance": "#55A868", "RMSD": "#C44E52"}
+    family_colors = {"RMSF": "#DD8452", "DNA_distance": "#55A868", "RMSD": "#C44E52"}
     default_color = "#8172B2"
 
     def _label(row):
         col = str(row["metric_col"]) if pd.notna(row["metric_col"]) else ""
         fam = str(row["metric_family"])
-        return f"{fam} | {col}" if col and col != fam and col != "d1_score" else fam
+        return f"{fam} | {col}" if col and col != fam else fam
 
     df = combined.copy()
     df["label"] = df.apply(_label, axis=1)
@@ -1619,14 +1077,13 @@ def run_ensemble_aware_pipeline(protein, force=False):
     prefix = _prefix(cfg)
     print(f"=== [{prefix}] Ensemble-aware pipeline ===")
 
-    run_d1_ensemble_sweep(cfg, force=force)
     run_rmsf_rmsd_ensemble_sweep(protein, force=force)
     run_rmsd_all_instances(cfg, force=force)
     if "dna_chains" in cfg:
         run_dna_ensemble_sweep(cfg, force=force)
 
     # Combine per-family sweep CSVs into one raw/performance/summary set.
-    family_names = ["D1_true_plddt", "RMSF_aligned_coord", "RMSD_aligned_coord"]
+    family_names = ["RMSF_aligned_coord", "RMSD_aligned_coord"]
     if "dna_chains" in cfg:
         family_names.append("DNA_distance")
     sweep_dir = _sweep_dir(cfg)

@@ -7,9 +7,9 @@ is `gz`, whose scaler is fitted on each fold's training rows; it exists because
 that is exactly the scaler the learned models in the screen use, and it shows
 what the per-gene normalisations are worth on their own.
 
-Orientation is fixed a priori: all four inputs are defined so that larger means
-more driver-like (AlphaMissense pathogenicity, D1 perturbation, both KS
-distances). No direction is ever flipped to fit the data.
+Orientation is fixed a priori: all three inputs are defined so that larger means
+more driver-like (AlphaMissense pathogenicity, both KS distances). No direction
+is ever flipped to fit the data.
 """
 from __future__ import annotations
 
@@ -17,18 +17,14 @@ import numpy as np
 from scipy.stats import norm, rankdata
 
 AFM = "afm_score"
-DESCRIPTORS = ("d1_score", "plddt_ks_residue", "plddt_ks_centred")
+DESCRIPTORS = ("plddt_ks_residue", "plddt_ks_centred")
 
-# Same eight input sets as the learned screen, so the two are directly comparable.
+# The input sets; the paper's combination is AM+resKS.
 ARMS = {
     "AM": [AFM],
-    "AM+D1": [AFM, "d1_score"],
     "AM+resKS": [AFM, "plddt_ks_residue"],
     "AM+cKS": [AFM, "plddt_ks_centred"],
-    "AM+D1+resKS": [AFM, "d1_score", "plddt_ks_residue"],
-    "AM+D1+cKS": [AFM, "d1_score", "plddt_ks_centred"],
     "AM+resKS+cKS": [AFM, "plddt_ks_residue", "plddt_ks_centred"],
-    "AM+all": [AFM, *DESCRIPTORS],
 }
 
 # Fixed, pre-specified weights on AlphaMissense; the rest is split equally over

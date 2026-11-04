@@ -1,12 +1,8 @@
 """Non-learned fusion across ensemble sizes.
 
-This is the non-learned half of the benchmark on its own, swept over the seven
-ensemble sizes and ten descriptor seeds the feature caches provide. No model is
-fitted anywhere in it, so the whole 70-cell grid costs one pass over the caches.
-
-The point of keeping it separate from `run_benchmark.py` is that a fitted model
-cannot be swept this cheaply, so the depth question and the learned-vs-non-learned
-question want different figures. Nothing here reads the model screen.
+Swept over the seven ensemble sizes and ten descriptor seeds the score caches
+provide. No model is fitted anywhere in it, so the whole 70-cell grid costs one
+pass over the caches.
 """
 from __future__ import annotations
 
@@ -32,14 +28,14 @@ from sklearn.model_selection import StratifiedKFold
 CACHE = ROOT / "drift/cache"
 # Pinned to the current protein-config fingerprint: caches of earlier cohorts
 # share the directory, and an unpinned glob matched two of them once v5 existed.
-CACHE_GLOB = "labeled_size{size}_seed{seed}_*proteins{fingerprint}_esfeat6.csv"
+CACHE_GLOB = "labeled_size{size}_seed{seed}_proteins{fingerprint}_esfeat7.csv"
 SIZES = (1, 5, 10, 20, 40, 60, 90)
 SEEDS = tuple(range(42, 52))
-COLUMNS = ["gene", "mutation", "label", *fusion.ARMS["AM+all"]]
+COLUMNS = ["gene", "mutation", "label", fusion.AFM, *fusion.DESCRIPTORS]
 # AlphaMissense is a sequence model: it does not see the ensemble, so its column
 # is identical in every cell. The run asserts this rather than assuming it.
 SIZE_INVARIANT = ["afm_score"]
-REFERENCES = {"AlphaMissense (raw)": "afm_score", "D1 alone": "d1_score",
+REFERENCES = {"AlphaMissense (raw)": "afm_score",
               "residue KS alone": "plddt_ks_residue", "centred KS alone": "plddt_ks_centred"}
 
 
@@ -84,7 +80,7 @@ def make_folds(frame):
 def cell_scores(frame, folds, protocols):
     """Every non-learned score plus the raw references, for one cell."""
     records = []
-    available = [c for c in fusion.ARMS["AM+all"] if not frame[c].isna().all()]
+    available = [c for c in (fusion.AFM, *fusion.DESCRIPTORS) if not frame[c].isna().all()]
     arms = {name: columns for name, columns in fusion.ARMS.items()
             if set(columns).issubset(available)}
     for label, column in REFERENCES.items():
@@ -128,7 +124,8 @@ def sweep(sizes, seeds, protocols, out, gt_group="evaluation"):
                 assert (frame.label.to_numpy() == reference_frame.label.to_numpy()).all()
                 for column in SIZE_INVARIANT:
                     np.testing.assert_allclose(frame[column], reference_frame[column])
-            required = ["afm_score", "d1_score"] if size < 2 else fusion.ARMS["AM+all"]
+            # load_cell blanks both KS columns at N=1, so only AlphaMissense is required there.
+            required = ["afm_score"] if size < 2 else COLUMNS[3:]
             assert np.isfinite(frame[required].to_numpy()).all(), (size, seed)
             cache_manifest.append({"size": size, "seed": seed, "gt_group": gt_group,
                                    "cache": path.name,
@@ -224,7 +221,7 @@ def main():
         "gt_group": args.gt_group,
         "genes": sorted(pd.read_csv(args.out / "cohort.csv").gene.unique().tolist()),
         "evaluations": len(macro), "summary_rows": len(summary),
-        "cache_tag": "esfeat6", "cohort": "strict canonical",
+        "cache_tag": "esfeat7", "cohort": "strict canonical",
         "arms": {k: v for k, v in fusion.ARMS.items()},
         "am_weights": list(fusion.AM_WEIGHTS),
         "methods": [s[0] for s in fusion.specifications()],
