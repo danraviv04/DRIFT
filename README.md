@@ -107,7 +107,7 @@ Stage names are `run_all.sh`'s; `S_<x>` is a stage of `analyses/annotation/stage
 
 - **D1**, an earlier descriptor (mean pLDDT shift), is still computed alongside the KS-score in the score caches and in some comparison tables (AM+D1); no paper result uses it.
 - **Unused functions.** Parts of `drift/` (the learned-fusion models) and of `metric_analysis/pipeline/library/structure_metrics.py` serve no paper result. They will be removed together with D1 in a later revision.
-- **Table S6, POLE row.** It was computed before POLE's eight 32-seed drivers were cut to 25 seeds and P356S left the cohort, which changes which POLE variants are sampled. Today's code gives a same-seed r of 0.73 (paper 0.74) and a KS change of −0.006 (paper −0.003); the other five genes reproduce exactly.
+- **Table S6, POLE row.** It was computed before POLE's eight 32-seed drivers were cut to 25 seeds and P356S left the cohort, which changes which POLE variants are sampled. Today's code gives a same-seed r of 0.73 (paper 0.74) and a KS change of −0.006 (paper −0.003); the other five genes reproduce exactly. Fig. S6 has the same cause: its POLE points move by at most 0.0003 in AUC, too little to see at print size, and the other genes are unchanged.
 - **The tests need the data:** `PYTHONPATH=. pytest drift/tests metric_analysis/tests af3_jobs/tests`.
 
 ## Citation

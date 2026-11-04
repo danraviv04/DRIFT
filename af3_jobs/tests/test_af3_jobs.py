@@ -122,6 +122,8 @@ def test_pten_regen14_reproduces_existing_directory():
 def test_muts_alpha_reproduces_existing_archive():
     """Job name, filename and version of the MSH2 batch are all preserved."""
     archive = MUTS_JSONS / "AF3_MSH2_Mutations.zip"
+    if not archive.is_file():
+        raise unittest.SkipTest(f"{archive} not present (the committed JSONs are data, not shipped)")
     jobs, _ = _jobs_by_filename("MutS_alpha_MSH2")
     with zipfile.ZipFile(archive) as zf:
         names = [n for n in zf.namelist() if n.endswith(".json")]

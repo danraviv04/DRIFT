@@ -28,3 +28,17 @@ analyses/seeds/seed_structure/plateau_20261018/
 analyses/seeds/seed_structure/three_arm_n25/
 figures/figure1/fig1b/models/
 figures/figure1/fig1b/panel_b/
+# outputs and deposited inputs that sit next to their scripts
+analyses/continuous/continuous_functional/cache/
+analyses/continuous/continuous_functional/four_gene_ks/
+analyses/continuous/kras_score_by_assay_bin/*.csv
+analyses/continuous/tp53_snv_reachability/*.csv
+analyses/continuous/tp53_snv_reachability/*.json
+analyses/continuous/tp53_snv_reachability/*.fa
+analyses/coordinates/s8_representatives/*.csv
+analyses/msh6_case_study/residue_null/residue_null_*
+analyses/seeds/seed_coupling_ks/seed_coupling_ks*.csv*
+analyses/seeds/tp53_af3_version_check/*.txt
+figures/figure1/ga_boxplot/ga_ks_*
+figures/figure1/ga_boxplot/*.csv
+figures/source/
